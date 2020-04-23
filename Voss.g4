@@ -7,6 +7,7 @@ parse
 declaration
   : structDeclaration
   | oneofDeclaration
+  | objectDeclaration
   ;
 
 structDeclaration
@@ -33,6 +34,18 @@ oneofMember
   : ID (COL ID)?
   ;
 
+objectDeclaration
+  : OBJECT ID OBRACE objectMembers CBRACE
+  ;
+
+objectMembers
+  : objectMember*
+  ;
+
+objectMember
+  : ID COL ID
+  ;
+
 // The lexer.
 
 COL : ':';
@@ -41,8 +54,9 @@ COM : ',';
 OBRACE : '{';
 CBRACE : '}';
 
-ONEOF : 'oneof';
 STRUCT : 'struct';
+ONEOF : 'oneof';
+OBJECT : 'object';
 
 ID
  : [a-zA-Z_] [a-zA-Z_0-9]*

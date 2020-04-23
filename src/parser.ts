@@ -7,6 +7,8 @@ import {
   StructMemberContext,
   OneofMemberContext,
   OneofDeclarationContext,
+  ObjectMemberContext,
+  ObjectDeclarationContext,
 } from '../grammar/VossParser';
 import { VossListener } from '../grammar/VossListener';
 import * as AST from './ast';
@@ -15,6 +17,7 @@ class GrammarListener implements VossListener {
   readonly declarations: AST.Declaration[] = [];
   private structMembers: AST.StructMember[] = [];
   private oneofMembers: AST.OneofMember[] = [];
+  private objectMembers: AST.ObjectMember[] = [];
 
   exitStructMember(ctx: StructMemberContext) {
     const name = ctx.ID(0).toString();
@@ -41,6 +44,19 @@ class GrammarListener implements VossListener {
     const members = this.oneofMembers;
     this.declarations.push({ kind: AST.DeclarationKind.Oneof, name, members });
     this.oneofMembers = [];
+  }
+
+  exitObjectMember(ctx: ObjectMemberContext) {
+    const name = ctx.ID(0).toString();
+    const type = ctx.ID(0).toString();
+    this.objectMembers.push({ name, type });
+  }
+
+  exitObjectDeclaration(ctx: ObjectDeclarationContext) {
+    const name = ctx.ID().toString();
+    const members = this.objectMembers;
+    this.declarations.push({ kind: AST.DeclarationKind.Object, name, members });
+    this.objectMembers = [];
   }
 }
 
