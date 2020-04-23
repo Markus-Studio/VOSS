@@ -2,9 +2,10 @@ export type Root = Declaration[];
 
 export const enum DeclarationKind {
   Struct,
+  Oneof,
 }
 
-export type Declaration = StructDeclaration;
+export type Declaration = StructDeclaration | OneofDeclaration;
 
 export interface StructDeclaration {
   kind: DeclarationKind.Struct;
@@ -13,6 +14,17 @@ export interface StructDeclaration {
 }
 
 export interface StructMember {
+  name: string;
+  type: string;
+}
+
+export interface OneofDeclaration {
+  kind: DeclarationKind.Oneof;
+  name: string;
+  members: OneofMember[];
+}
+
+export interface OneofMember {
   name: string;
   type: string;
 }

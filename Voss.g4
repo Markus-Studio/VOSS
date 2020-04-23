@@ -1,14 +1,12 @@
 grammar Voss;
 
 parse
-  : block EOF
+  : declaration* EOF
   ;
-
-block
-  : declaration;
 
 declaration
   : structDeclaration
+  | oneofDeclaration
   ;
 
 structDeclaration
@@ -23,13 +21,27 @@ structMember
   : ID COL ID SCOL
   ;
 
+oneofDeclaration
+  : ONEOF ID OBRACE oneofMembers CBRACE
+  ;
+
+oneofMembers
+  : oneofMember (COM oneofMember)*
+  ;
+
+oneofMember
+  : ID (COL ID)?
+  ;
+
 // The lexer.
 
 COL : ':';
 SCOL : ';';
+COM : ',';
 OBRACE : '{';
 CBRACE : '}';
 
+ONEOF : 'oneof';
 STRUCT : 'struct';
 
 ID
