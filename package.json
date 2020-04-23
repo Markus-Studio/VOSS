@@ -1,0 +1,24 @@
+{
+  "name": "voss",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Parsa Ghadimi <qti3eqti3e@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "grammar": "antlr4ts -o grammar Voss.g4",
+    "fmt": "prettier --write 'src/**/*.ts'"
+  },
+  "dependencies": {
+    "antlr4ts": "^0.5.0-alpha.3"
+  },
+  "devDependencies": {
+    "antlr4ts-cli": "^0.5.0-alpha.3",
+    "prettier": "^2.0.5",
+    "ts-node": "^8.9.0",
+    "tslib": "^1.11.1",
+    "typescript": "^3.8.3"
+  },
+  "prettier": {
+    "singleQuote": true
+  }
+}

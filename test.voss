@@ -1,0 +1,24 @@
+struct FieldTypeObjectReference {
+  object:TypespaceObject;
+}
+
+struct FieldTypePrimitive {
+  provider:string;
+}
+
+oneof FieldType {
+  FieldTypeObjectReference,
+  FieldTypePrimitive
+}
+
+object TypespaceObject {
+  title:string;
+  x:string;
+  y:string;
+}
+
+object TypespaceObjectField {
+  title:string;
+  object:TypespaceObject;
+  type:FieldType;
+}
