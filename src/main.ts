@@ -15,8 +15,6 @@ const source = readFileSync(join(process.cwd(), filename), 'utf-8');
 const tree = parse(source);
 const program = build(tree);
 
-console.log(JSON.stringify(program, null, 2));
-
-// const writer = new PrettyWriter();
-// new TypeScriptBackend(writer, tree);
-// console.log(writer.getSource());
+const writer = new PrettyWriter();
+new TypeScriptBackend(writer, program);
+console.log(writer.getSource());

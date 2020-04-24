@@ -30,19 +30,21 @@ export interface OneofReferenceType {
   oneof: Oneof;
 }
 
+export type InternalTypeName =
+  | 'u8'
+  | 'u16'
+  | 'u32'
+  | 'u64'
+  | 'i8'
+  | 'i16'
+  | 'i32'
+  | 'i64'
+  | 'string'
+  | 'bool';
+
 export interface InternalPrimitiveType {
   kind: TypeKind.InternalPrimitive;
-  name:
-    | 'u8'
-    | 'u16'
-    | 'u32'
-    | 'u64'
-    | 'i8'
-    | 'i16'
-    | 'i32'
-    | 'i64'
-    | 'string'
-    | 'bool';
+  name: InternalTypeName;
 }
 
 export interface TupleType {
@@ -62,22 +64,22 @@ export interface FieldInfo {
   type: Type;
 }
 
-export const enum IRType {
+export const enum DeclarationType {
   Structure,
   RootObject,
   Oneof,
 }
 
 export interface Structure {
-  type: IRType.Structure;
+  type: DeclarationType.Structure;
   name: string;
-  fields: Record<string, FieldInfo | undefined>;
+  fields: FieldInfo[];
 }
 
 export interface RootObject {
-  type: IRType.RootObject;
+  type: DeclarationType.RootObject;
   name: string;
-  fields: Record<string, FieldInfo | undefined>;
+  fields: FieldInfo[];
 }
 
 export interface OneofCase {
@@ -86,12 +88,12 @@ export interface OneofCase {
 }
 
 export interface Oneof {
-  type: IRType.Oneof;
+  type: DeclarationType.Oneof;
   name: string;
-  cases: Record<string, OneofCase | undefined>;
+  cases: OneofCase[];
 }
 
-const InternalTypes = new Set<InternalPrimitiveType['name']>([
+const InternalTypes = new Set<InternalTypeName>([
   'u8',
   'u16',
   'u32',
@@ -163,11 +165,11 @@ export function build(tree: AST.Root) {
         throw new Error(`Cannot resolve type ${name}.`);
       }
       switch (declaration.type) {
-        case IRType.Structure:
+        case DeclarationType.Structure:
           return { kind: TypeKind.Struct, struct: declaration };
-        case IRType.RootObject:
+        case DeclarationType.RootObject:
           return { kind: TypeKind.RootObjectReference, object: declaration };
-        case IRType.Oneof:
+        case DeclarationType.Oneof:
           return { kind: TypeKind.OneofReference, oneof: declaration };
       }
     };
@@ -213,15 +215,15 @@ export function build(tree: AST.Root) {
   for (const declaration of sorted) {
     switch (declaration.kind) {
       case AST.DeclarationKind.Struct: {
-        const fields: Record<string, FieldInfo | undefined> = {};
+        const fields: FieldInfo[] = [];
         for (const member of declaration.members) {
-          fields[member.name] = {
+          fields.push({
             name: member.name,
             type: getType(member.type),
-          };
+          });
         }
         const struct: Structure = {
-          type: IRType.Structure,
+          type: DeclarationType.Structure,
           name: declaration.name,
           fields,
         };
@@ -230,15 +232,15 @@ export function build(tree: AST.Root) {
         break;
       }
       case AST.DeclarationKind.Object: {
-        const fields: Record<string, FieldInfo | undefined> = {};
+        const fields: FieldInfo[] = [];
         for (const member of declaration.members) {
-          fields[member.name] = {
+          fields.push({
             name: member.name,
             type: getType(member.type),
-          };
+          });
         }
         const object: RootObject = {
-          type: IRType.RootObject,
+          type: DeclarationType.RootObject,
           name: declaration.name,
           fields,
         };
@@ -247,19 +249,19 @@ export function build(tree: AST.Root) {
         break;
       }
       case AST.DeclarationKind.Oneof: {
-        const cases: Record<string, OneofCase | undefined> = {};
+        const cases: OneofCase[] = [];
         for (const member of declaration.members) {
           const type = getType(member.type);
           if (type.kind !== TypeKind.Struct) {
             throw new Error('Non struct types are not allowed in Oneof cases.');
           }
-          cases[member.name] = {
+          cases.push({
             name: member.name,
             type,
-          };
+          });
         }
         const oneof: Oneof = {
-          type: IRType.Oneof,
+          type: DeclarationType.Oneof,
           name: declaration.name,
           cases,
         };
@@ -297,6 +299,6 @@ function extractTypes(type: string | AST.Type): string[] {
   return [...result];
 }
 
-function isInternal(name: string): name is InternalPrimitiveType['name'] {
+function isInternal(name: string): name is InternalTypeName {
   return InternalTypes.has(name as any);
 }
