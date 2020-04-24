@@ -41,5 +41,22 @@ export interface ObjectDeclaration {
 
 export interface ObjectMember {
   name: string;
-  type: string;
+  type: Type;
+}
+
+export type Type = PrimitiveType | TupleType;
+
+export const enum TypeKind {
+  Primitive,
+  Tuple,
+}
+
+export interface PrimitiveType {
+  kind: TypeKind.Primitive;
+  name: string;
+}
+
+export interface TupleType {
+  kind: TypeKind.Tuple;
+  members: Type[];
 }

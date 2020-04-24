@@ -13,12 +13,12 @@ oneof FieldType {
 
 object TypespaceObject {
   title:string;
-  x:string;
-  y:string;
+  position:[int32, int32];
 }
 
 object TypespaceObjectField {
   title:string;
   object:TypespaceObject;
   type:FieldType;
+  optional:bool;
 }

@@ -9,6 +9,7 @@ import {
   OneofDeclarationContext,
   ObjectMemberContext,
   ObjectDeclarationContext,
+  PrimitiveTypeContext,
 } from '../grammar/VossParser';
 import { VossListener } from '../grammar/VossListener';
 import * as AST from './ast';
@@ -18,6 +19,8 @@ class GrammarListener implements VossListener {
   private structMembers: AST.StructMember[] = [];
   private oneofMembers: AST.OneofMember[] = [];
   private objectMembers: AST.ObjectMember[] = [];
+  private currentTypesStack: AST.Type[] = [];
+  private currentType?: AST.Type;
 
   exitStructMember(ctx: StructMemberContext) {
     const name = ctx.ID(0).toString();
@@ -47,9 +50,8 @@ class GrammarListener implements VossListener {
   }
 
   exitObjectMember(ctx: ObjectMemberContext) {
-    const name = ctx.ID(0).toString();
-    const type = ctx.ID(0).toString();
-    this.objectMembers.push({ name, type });
+    const name = ctx.ID().toString();
+    this.objectMembers.push({ name, type: this.currentType! });
   }
 
   exitObjectDeclaration(ctx: ObjectDeclarationContext) {
@@ -57,6 +59,35 @@ class GrammarListener implements VossListener {
     const members = this.objectMembers;
     this.declarations.push({ kind: AST.DeclarationKind.Object, name, members });
     this.objectMembers = [];
+  }
+
+  enterTupleType() {
+    const newType: AST.TupleType = { kind: AST.TypeKind.Tuple, members: [] };
+    this.currentTypesStack.push(newType);
+  }
+
+  exitPrimitiveType(ctx: PrimitiveTypeContext) {
+    const newType: AST.PrimitiveType = {
+      kind: AST.TypeKind.Primitive,
+      name: ctx.ID().toString(),
+    };
+    this.currentTypesStack.push(newType);
+  }
+
+  exitTupleMember() {
+    const member = this.currentTypesStack.pop()!;
+    const tuple = this.currentTypesStack[this.currentTypesStack.length - 1];
+    if (tuple.kind !== AST.TypeKind.Tuple) {
+      throw new Error('Expected tuple to be on the top of stack.');
+    }
+    tuple.members.push(member!);
+  }
+
+  exitType() {
+    if (this.currentTypesStack.length !== 1) {
+      throw new Error('Unexpected tree.');
+    }
+    this.currentType = this.currentTypesStack.pop()!;
   }
 }
 

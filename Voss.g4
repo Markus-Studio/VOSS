@@ -27,11 +27,11 @@ oneofDeclaration
   ;
 
 oneofMembers
-  : oneofMember (COM oneofMember)*
+  : (oneofMember COM)* oneofMember?
   ;
 
 oneofMember
-  : ID (COL ID)?
+  : ID (OPAR ID CPAR)?
   ;
 
 objectDeclaration
@@ -43,7 +43,29 @@ objectMembers
   ;
 
 objectMember
-  : ID COL ID
+  : ID COL type SCOL
+  ;
+
+type
+  : tupleType
+  | primitiveType
+  ;
+
+primitiveType
+  : ID
+  ;
+
+tupleType
+  : OBRACK tupleMembers CBRACK
+  ;
+
+tupleMembers
+  : (tupleMember COM)* tupleMember?
+  ;
+
+tupleMember
+  : tupleType
+  | primitiveType
   ;
 
 // The lexer.
@@ -51,8 +73,12 @@ objectMember
 COL : ':';
 SCOL : ';';
 COM : ',';
+OPAR : '(';
+CPAR : ')';
 OBRACE : '{';
 CBRACE : '}';
+OBRACK : '[';
+CBRACK : ']';
 
 STRUCT : 'struct';
 ONEOF : 'oneof';
