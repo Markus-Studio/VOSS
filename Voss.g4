@@ -102,6 +102,10 @@ SPACE
  : [ \t\r\n] -> skip
  ;
 
+COMMENT
+ : '//' ~('\n')* -> skip
+ ;
+
 OTHER
  : . 
  ;
