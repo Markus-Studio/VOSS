@@ -37,11 +37,18 @@ export interface ObjectDeclaration {
   kind: DeclarationKind.Object;
   name: string;
   members: ObjectMember[];
+  views: ObjectView[];
 }
 
 export interface ObjectMember {
   name: string;
   type: Type;
+}
+
+export interface ObjectView {
+  name: string;
+  object: string;
+  via: string;
 }
 
 export type Type = PrimitiveType | TupleType;

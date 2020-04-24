@@ -7,9 +7,10 @@ import {
   StructMemberContext,
   OneofMemberContext,
   OneofDeclarationContext,
-  ObjectMemberContext,
   ObjectDeclarationContext,
   PrimitiveTypeContext,
+  ObjectFieldContext,
+  ObjectViewContext,
 } from '../grammar/VossParser';
 import { VossListener } from '../grammar/VossListener';
 import * as AST from './ast';
@@ -19,6 +20,7 @@ class GrammarListener implements VossListener {
   private structMembers: AST.StructMember[] = [];
   private oneofMembers: AST.OneofMember[] = [];
   private objectMembers: AST.ObjectMember[] = [];
+  private objectViews: AST.ObjectView[] = [];
   private currentTypesStack: AST.Type[] = [];
   private currentType?: AST.Type;
 
@@ -49,16 +51,30 @@ class GrammarListener implements VossListener {
     this.oneofMembers = [];
   }
 
-  exitObjectMember(ctx: ObjectMemberContext) {
+  exitObjectField(ctx: ObjectFieldContext) {
     const name = ctx.ID().toString();
     this.objectMembers.push({ name, type: this.currentType! });
+  }
+
+  exitObjectView(ctx: ObjectViewContext) {
+    const object = ctx.ID(0).toString();
+    const via = ctx.ID(1).toString();
+    const name = ctx.ID(2).toString();
+    this.objectViews.push({ name, object, via });
   }
 
   exitObjectDeclaration(ctx: ObjectDeclarationContext) {
     const name = ctx.ID().toString();
     const members = this.objectMembers;
-    this.declarations.push({ kind: AST.DeclarationKind.Object, name, members });
+    const views = this.objectViews;
+    this.declarations.push({
+      kind: AST.DeclarationKind.Object,
+      name,
+      members,
+      views,
+    });
     this.objectMembers = [];
+    this.objectViews = [];
   }
 
   enterTupleType() {

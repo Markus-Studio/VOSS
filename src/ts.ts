@@ -18,6 +18,7 @@ export class TypeScriptBackend {
   constructor(protected writer: Writer, protected program: IR.Program) {
     this.genHeader();
     this.genInterfaces();
+    this.genClass();
   }
 
   write(chunk: string) {
@@ -39,11 +40,11 @@ export class TypeScriptBackend {
       this.genOneofInterface(declaration);
     }
     for (const declaration of this.program.objects) {
-      this.genStructInterface(declaration);
+      this.genObjectClass(declaration);
     }
   }
 
-  genStructInterface(declaration: IR.Structure | IR.RootObject) {
+  genStructInterface(declaration: IR.Structure) {
     this.write(`export interface ${declaration.name} {\n`);
     for (const data of declaration.fields) {
       if (data.type.kind === IR.TypeKind.RootObjectReference) {
@@ -55,6 +56,7 @@ export class TypeScriptBackend {
     }
     for (const data of declaration.fields) {
       if (data.type.kind === IR.TypeKind.RootObjectReference) {
+        this.write('readonly $' + data.name + ': UUID;\n');
         this.write('readonly load' + upper(data.name) + '(): Promise<');
         this.write(data.type.object.name);
         this.write(' | undefined>;\n');
@@ -80,6 +82,47 @@ export class TypeScriptBackend {
       this.write(i === declaration.cases.length - 1 ? '>;\n' : '>\n');
     }
     this.writer.dedent();
+  }
+
+  genObjectClass(declaration: IR.RootObject) {
+    this.write(`export class ${declaration.name} {\n`);
+    this.write('readonly $uuid: UUID;\n');
+
+    for (const data of declaration.fields) {
+      if (data.type.kind === IR.TypeKind.RootObjectReference) {
+        continue;
+      }
+      this.write('readonly ' + data.name + ': ');
+      this.genType(data.type);
+      this.write(';\n');
+    }
+
+    for (const data of declaration.fields) {
+      if (data.type.kind === IR.TypeKind.RootObjectReference) {
+        this.write('private readonly $' + data.name + ': ');
+        this.genType(data.type);
+        this.write(';\n');
+      }
+    }
+
+    this.write('constructor(\n');
+    this.writer.indent();
+    this.write('private readonly voss: VOSS,\n');
+    this.write('uuid: VOSS,\n');
+    this.writer.dedent();
+
+    this.write(`}\n`);
+  }
+
+  genClass() {
+    this.write('export class VOSS {\n');
+    this.write('private objects = new Map<UUID, any>();\n');
+
+    this.write('constructor() {\n');
+    this.write('x\n');
+    this.write('}\n');
+
+    this.write('}');
   }
 
   genType(type: IR.Type, open = 'readonly [', close = ']') {

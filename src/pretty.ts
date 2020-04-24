@@ -11,6 +11,7 @@ export class PrettyWriter implements Writer {
   }
 
   private set indentLevel(value: number) {
+    this._indentLevel = value;
     if (value <= 0) {
       this.currentIndent = '';
     } else {
@@ -27,35 +28,34 @@ export class PrettyWriter implements Writer {
     if (
       this.lines.length > 0 &&
       line.endsWith('{') &&
-      this.lines[this.lines.length - 1] !== ''
+      !this.lines[this.lines.length - 1].endsWith('{')
     ) {
       this.lines.push('');
     }
 
-    if (line.startsWith('}')) {
-      for (let i = 0; i < line.length; ++i) {
-        if (line[i] !== '}') {
-          break;
-        }
-        this.indentLevel -= 1;
+    let indentOffset = 0;
+    for (; indentOffset < line.length; ++indentOffset) {
+      const char = line[indentOffset];
+      if (char === '{') {
+        break;
+      } else if (char === '}') {
+        this.dedent();
       }
     }
 
-    line = this.currentIndent + line;
-    this.lines.push(line);
+    const indentation = this.currentIndent;
 
-    if (line.endsWith('}')) {
-      this.lines.push('');
-    }
-
-    for (let i = 0; i < line.length; ++i) {
-      if (line[i] === '{') {
-        this.indentLevel = this.indentLevel + 1;
-      }
-      if (line[i] === '}') {
-        this.indentLevel = this.indentLevel - 1;
+    for (; indentOffset < line.length; ++indentOffset) {
+      const char = line[indentOffset];
+      if (char === '{') {
+        this.indent();
+      } else if (char === '}') {
+        this.dedent();
       }
     }
+
+    const currentLine = indentation + line;
+    this.lines.push(currentLine);
   }
 
   write(chunk: string): void {

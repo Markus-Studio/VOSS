@@ -73,13 +73,22 @@ export const enum DeclarationType {
 export interface Structure {
   type: DeclarationType.Structure;
   name: string;
+  id: number;
   fields: FieldInfo[];
 }
 
 export interface RootObject {
   type: DeclarationType.RootObject;
   name: string;
+  id: number;
   fields: FieldInfo[];
+  views: View[];
+}
+
+export interface View {
+  name: string;
+  object: RootObject;
+  via: string;
 }
 
 export interface OneofCase {
@@ -89,6 +98,7 @@ export interface OneofCase {
 
 export interface Oneof {
   type: DeclarationType.Oneof;
+  id: number;
   name: string;
   cases: OneofCase[];
 }
@@ -139,6 +149,33 @@ export function build(tree: AST.Root) {
       }
 
       memberNames.add(member.name);
+    }
+
+    if (declaration.kind === AST.DeclarationKind.Object) {
+      for (const view of declaration.views) {
+        if (memberNames.has(view.name)) {
+          throw new Error(`Member '${view.name}' is already defined.`);
+        }
+        memberNames.add(view.name);
+      }
+    }
+  }
+
+  const declaration2ID = new Map<AST.Declaration, number>();
+  let nextStructID = 0;
+  let nextObjectID = 0;
+  let nextEnumID = 0;
+  for (const declaration of tree) {
+    switch (declaration.kind) {
+      case AST.DeclarationKind.Struct:
+        declaration2ID.set(declaration, nextStructID++);
+        break;
+      case AST.DeclarationKind.Object:
+        declaration2ID.set(declaration, nextObjectID++);
+        break;
+      case AST.DeclarationKind.Oneof:
+        declaration2ID.set(declaration, nextEnumID++);
+        break;
     }
   }
 
@@ -225,6 +262,7 @@ export function build(tree: AST.Root) {
         const struct: Structure = {
           type: DeclarationType.Structure,
           name: declaration.name,
+          id: declaration2ID.get(declaration)!,
           fields,
         };
         generated.set(struct.name, struct);
@@ -242,6 +280,8 @@ export function build(tree: AST.Root) {
         const object: RootObject = {
           type: DeclarationType.RootObject,
           name: declaration.name,
+          id: declaration2ID.get(declaration)!,
+          views: [],
           fields,
         };
         generated.set(object.name, object);
@@ -263,12 +303,48 @@ export function build(tree: AST.Root) {
         const oneof: Oneof = {
           type: DeclarationType.Oneof,
           name: declaration.name,
+          id: declaration2ID.get(declaration)!,
           cases,
         };
         generated.set(oneof.name, oneof);
         program.enums.push(oneof);
         break;
       }
+    }
+  }
+
+  for (const declaration of tree) {
+    if (declaration.kind !== AST.DeclarationKind.Object) {
+      continue;
+    }
+
+    for (const view of declaration.views) {
+      const target = generated.get(declaration.name)!;
+
+      const object = generated.get(view.object);
+      if (!object) {
+        throw new Error(`Cannot resolve object ${view.object}`);
+      }
+      if (object.type !== DeclarationType.RootObject) {
+        throw new Error(`${view.object} is not a root object.`);
+      }
+      const field = object.fields.find((f) => f.name === view.via);
+      if (!field) {
+        throw new Error(`${view.via} does not exists on ${view.object}`);
+      }
+      if (
+        field.type.kind !== TypeKind.RootObjectReference ||
+        field.type.object !== target
+      ) {
+        throw new Error(
+          `${view.via} on ${view.object} is not of type ${declaration.name}`
+        );
+      }
+      target.views.push({
+        name: view.name,
+        object,
+        via: field.name,
+      });
     }
   }
 

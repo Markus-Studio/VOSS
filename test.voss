@@ -14,6 +14,8 @@ oneof FieldType {
 object TypespaceObject {
   title:string;
   position:[i32, i32];
+  
+  @View(TypespaceObjectField, obj) fields;
 }
 
 object TypespaceObjectField {

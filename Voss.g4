@@ -43,7 +43,16 @@ objectMembers
   ;
 
 objectMember
+  : objectField
+  | objectView
+  ;
+
+objectField
   : ID COL type SCOL
+  ;
+
+objectView
+  : VIEW OPAR ID COM ID CPAR ID SCOL
   ;
 
 type
@@ -83,6 +92,7 @@ CBRACK : ']';
 STRUCT : 'struct';
 ONEOF : 'oneof';
 OBJECT : 'object';
+VIEW : '@View';
 
 ID
  : [a-zA-Z_] [a-zA-Z_0-9]*
