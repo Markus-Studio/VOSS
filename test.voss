@@ -1,5 +1,5 @@
 struct FieldTypeObjectReference {
-  object:TypespaceObject;
+  obj:TypespaceObject;
 }
 
 struct FieldTypePrimitive {
@@ -13,12 +13,12 @@ oneof FieldType {
 
 object TypespaceObject {
   title:string;
-  position:[int32, int32];
+  position:[i32, i32];
 }
 
 object TypespaceObjectField {
   title:string;
-  object:TypespaceObject;
+  obj:TypespaceObject;
   type:FieldType;
   optional:bool;
 }

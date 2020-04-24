@@ -24,7 +24,7 @@ class GrammarListener implements VossListener {
 
   exitStructMember(ctx: StructMemberContext) {
     const name = ctx.ID(0).toString();
-    const type = ctx.ID(0).toString();
+    const type = ctx.ID(1).toString();
     this.structMembers.push({ name, type });
   }
 
