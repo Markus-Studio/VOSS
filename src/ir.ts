@@ -83,11 +83,18 @@ export interface RootObject {
   id: number;
   fields: FieldInfo[];
   views: View[];
+  viewedIn: ViewRef[];
 }
 
 export interface View {
   name: string;
   object: RootObject;
+  via: string;
+}
+
+export interface ViewRef {
+  host: RootObject;
+  as: string;
   via: string;
 }
 
@@ -282,6 +289,7 @@ export function build(tree: AST.Root) {
           name: declaration.name,
           id: declaration2ID.get(declaration)!,
           views: [],
+          viewedIn: [],
           fields,
         };
         generated.set(object.name, object);
@@ -340,10 +348,17 @@ export function build(tree: AST.Root) {
           `${view.via} on ${view.object} is not of type ${declaration.name}`
         );
       }
+
       target.views.push({
         name: view.name,
         object,
-        via: field.name,
+        via: view.via,
+      });
+
+      object.viewedIn.push({
+        host: target,
+        as: view.name,
+        via: view.via,
       });
     }
   }
