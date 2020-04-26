@@ -5,6 +5,7 @@ export interface Program {
   structures: Structure[];
   objects: RootObject[];
   enums: Oneof[];
+  rpc: Oneof;
 }
 
 export const enum TypeKind {
@@ -34,11 +35,11 @@ export type InternalTypeName =
   | 'u8'
   | 'u16'
   | 'u32'
-  | 'u64'
   | 'i8'
   | 'i16'
   | 'i32'
-  | 'i64'
+  | 'f32'
+  | 'f64'
   | 'string'
   | 'bool';
 
@@ -101,6 +102,7 @@ export interface ViewRef {
 export interface OneofCase {
   name: string;
   type: StructReferenceType;
+  value: number;
 }
 
 export interface Oneof {
@@ -114,11 +116,11 @@ const InternalTypes = new Set<InternalTypeName>([
   'u8',
   'u16',
   'u32',
-  'u64',
   'i8',
   'i16',
   'i32',
-  'i64',
+  'f32',
+  'f64',
   'string',
   'bool',
 ]);
@@ -254,6 +256,12 @@ export function build(tree: AST.Root) {
     structures: [],
     objects: [],
     enums: [],
+    rpc: {
+      type: DeclarationType.Oneof,
+      name: 'RPCMessage',
+      id: NaN,
+      cases: [],
+    }
   };
 
   for (const declaration of sorted) {
@@ -298,6 +306,7 @@ export function build(tree: AST.Root) {
       }
       case AST.DeclarationKind.Oneof: {
         const cases: OneofCase[] = [];
+        let value = 0;
         for (const member of declaration.members) {
           const type = getType(member.type);
           if (type.kind !== TypeKind.Struct) {
@@ -305,6 +314,7 @@ export function build(tree: AST.Root) {
           }
           cases.push({
             name: member.name,
+            value: value++,
             type,
           });
         }
@@ -363,7 +373,39 @@ export function build(tree: AST.Root) {
     }
   }
 
+  buildRPC(program);
+
   return program;
+}
+
+function buildRPC(program: Program) {
+  const cases = program.rpc.cases;
+
+  const clockData: Structure = {
+    type: DeclarationType.Structure,
+    name: 'RPC$ClockData',
+    id: NaN,
+    fields: [
+      {
+        name: 'timestamp',
+        type: {
+          kind: TypeKind.InternalPrimitive,
+          name: 'f64',
+        },
+      },
+    ],
+  };
+
+  program.structures.push(clockData);
+
+  cases.push({
+    name: 'clock',
+    value: 1,
+    type: {
+      kind: TypeKind.Struct,
+      struct: clockData
+    },
+  });
 }
 
 function extractTypes(type: string | AST.Type): string[] {

@@ -1,7 +1,7 @@
 import { parse } from './parser';
 import { TypeScriptBackend } from './ts';
 import { PrettyWriter } from './pretty';
-import { readFileSync } from 'fs';
+import { readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { build } from './ir';
 
@@ -11,12 +11,12 @@ if (!filename) {
   process.exit(-1);
 }
 
-const source = readFileSync(join(process.cwd(), filename), 'utf-8');
+const filePath = join(process.cwd(), filename);
+
+const source = readFileSync(filePath, 'utf-8');
 const tree = parse(source);
 const program = build(tree);
 
-debugger;
-
 const writer = new PrettyWriter();
 new TypeScriptBackend(writer, program);
-console.log(writer.getSource());
+writeFileSync(filePath + '.ts', writer.getSource());

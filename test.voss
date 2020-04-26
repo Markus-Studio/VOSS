@@ -1,28 +1,9 @@
-struct FieldTypeObjectReference {
-  obj:TypespaceObject;
+struct A {
+  ref: T;
+  x: i32;
+  p: string;
+  u: bool;
+  tuple: [i32, i32];
 }
 
-struct FieldTypePrimitive {
-  provider:string;
-}
-
-oneof FieldType {
-  FieldTypeObjectReference,
-  FieldTypePrimitive
-}
-
-object TypespaceObject {
-  title:string;
-  position:[i32, i32];
-
-  @View(TypespaceObjectField, obj) fields;
-}
-
-object TypespaceObjectField {
-  title:string;
-  obj:TypespaceObject;
-  type:FieldType;
-  optional:bool;
-}
-
-// @Root(TypespaceObject) typespace;
+object T {}

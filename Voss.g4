@@ -19,7 +19,7 @@ structMembers
   ;
 
 structMember
-  : ID COL ID SCOL
+  : ID COL type SCOL
   ;
 
 oneofDeclaration

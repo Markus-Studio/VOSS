@@ -19,7 +19,7 @@ export interface StructDeclaration {
 
 export interface StructMember {
   name: string;
-  type: string;
+  type: Type;
 }
 
 export interface OneofDeclaration {
