@@ -32,54 +32,7 @@ export class TypeScriptBackend {
 
 export type UUID = string;
 
-export interface EnumCase<T, V> {
-  readonly session: Session;
-  readonly type: T;
-  readonly value: V;
-}
-
-export type LazyReference<T> = Promise<T | undefined>;
-
-export interface ChangeNotifier {
-  on(event: 'change', cb: () => void): void;
-  off(event: 'change', cb: () => void): void;
-}
-
-export interface ReadonlyView<T> extends ChangeNotifier {
-  readonly members: ReadonlyArray<T>;
-}
-
-export interface ReadonlyLazyView<T> extends ReadonlyView<T> {
-  readonly isLoaded: boolean;
-  load(): Promise<void>;
-}
-
-export class IChangeNotifier implements ChangeNotifier {
-  private readonly listeners = new Set<() => void>();
-
-  on(event: 'change', cb: () => void): void {
-    if (event !== 'change') {
-      return;
-    }
-
-    this.listeners.add(cb);
-  }
-
-  off(event: 'change', cb: () => void): void {
-    if (event !== 'change') {
-      return;
-    }
-
-    this.listeners.delete(cb);
-  }
-
-  emitChange(): void {
-    for (const listener of this.listeners) {
-      listener();
-    }
-  }
-}
-
+import { IChangeNotifier, EnumCase, LazyReference } from './runtime';
 `);
   }
 
@@ -220,7 +173,7 @@ export class Session {
     this.genOneofInterface(this.program.rpc);
   }
 
-  genType(type: IR.Type, open = 'readonly [', close = ']') {
+  genType(type: IR.Type) {
     if (type.kind === IR.TypeKind.InternalPrimitive) {
       this.write(TypeNames[type.name]);
     } else if (type.kind == IR.TypeKind.OneofReference) {
@@ -229,15 +182,6 @@ export class Session {
       this.write(type.struct.name);
     } else if (type.kind === IR.TypeKind.RootObjectReference) {
       this.write('UUID');
-    } else {
-      this.write(open);
-      for (let i = 0; i < type.members.length; ++i) {
-        if (i > 0) {
-          this.write(', ');
-        }
-        this.genType(type.members[i]);
-      }
-      this.write(close);
     }
   }
 }

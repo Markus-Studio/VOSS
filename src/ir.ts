@@ -12,8 +12,7 @@ export const enum TypeKind {
   Struct = 'Struct',
   RootObjectReference = 'RootObject',
   OneofReference = 'Oneof',
-  InternalPrimitive = 'InternalPrimitive',
-  Tuple = 'Tuple',
+  InternalPrimitive = 'InternalPrimitive'
 }
 
 export interface StructReferenceType {
@@ -48,17 +47,11 @@ export interface InternalPrimitiveType {
   name: InternalTypeName;
 }
 
-export interface TupleType {
-  kind: TypeKind.Tuple;
-  members: (InternalPrimitiveType | StructReferenceType)[];
-}
-
 export type Type =
   | StructReferenceType
   | RootObjectReferenceType
   | OneofReferenceType
-  | InternalPrimitiveType
-  | TupleType;
+  | InternalPrimitiveType;
 
 export interface FieldInfo {
   name: string;
@@ -229,24 +222,7 @@ export function build(tree: AST.Root) {
     }
 
     const convert = (t: AST.Type): Type => {
-      if (t.kind === AST.TypeKind.Primitive) {
-        return getPrimitiveType(t.name);
-      } else {
-        return {
-          kind: TypeKind.Tuple,
-          members: t.members.map(convert).filter((t2) => {
-            if (
-              t2.kind === TypeKind.InternalPrimitive ||
-              t2.kind === TypeKind.Struct
-            ) {
-              return true;
-            }
-            throw new Error(
-              'Complex tuples such as this one are not supported.'
-            );
-          }) as any,
-        };
-      }
+      return getPrimitiveType(t.name);
     };
 
     return convert(type);
@@ -418,13 +394,7 @@ function extractTypes(type: string | AST.Type): string[] {
   const result = new Set<string>();
 
   const visit = (t: AST.Type): void => {
-    if (t.kind === AST.TypeKind.Primitive) {
-      result.add(t.name);
-    } else {
-      for (const member of t.members) {
-        visit(member);
-      }
-    }
+    result.add(t.name);
   };
 
   visit(type);

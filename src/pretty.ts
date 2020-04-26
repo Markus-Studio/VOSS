@@ -25,14 +25,6 @@ export class PrettyWriter implements Writer {
       return;
     }
 
-    if (
-      this.lines.length > 0 &&
-      line.endsWith('{') &&
-      !this.lines[this.lines.length - 1].endsWith('{')
-    ) {
-      this.lines.push('');
-    }
-
     let indentOffset = 0;
     for (; indentOffset < line.length; ++indentOffset) {
       const char = line[indentOffset];
@@ -54,8 +46,30 @@ export class PrettyWriter implements Writer {
       }
     }
 
+    if (
+      this.lines.length > 0 &&
+      line.indexOf('{') > 0 &&
+      line.indexOf('}') < 0 &&
+      this.lines[this.lines.length - 1] !== ''
+    ) {
+      this.lines.push('');
+    }
+
+    if (line === '}' && this.lines.length > 0 && this.lines[this.lines.length - 1] === '') {
+      this.lines.pop();
+    }
+
     const currentLine = indentation + line;
     this.lines.push(currentLine);
+
+    if (
+      this.lines.length > 1 &&
+      line.endsWith('}') &&
+      line.indexOf('{') < 0 &&
+      !this.lines[this.lines.length - 2].endsWith('}')
+    ) {
+      this.lines.push('');
+    }
   }
 
   write(chunk: string): void {

@@ -51,19 +51,13 @@ export interface ObjectView {
   via: string;
 }
 
-export type Type = PrimitiveType | TupleType;
+export type Type = PrimitiveType;
 
 export const enum TypeKind {
-  Primitive,
-  Tuple,
+  Primitive
 }
 
 export interface PrimitiveType {
   kind: TypeKind.Primitive;
   name: string;
-}
-
-export interface TupleType {
-  kind: TypeKind.Tuple;
-  members: Type[];
 }

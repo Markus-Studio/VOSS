@@ -77,26 +77,12 @@ class GrammarListener implements VossListener {
     this.objectViews = [];
   }
 
-  enterTupleType() {
-    const newType: AST.TupleType = { kind: AST.TypeKind.Tuple, members: [] };
-    this.currentTypesStack.push(newType);
-  }
-
   exitPrimitiveType(ctx: PrimitiveTypeContext) {
     const newType: AST.PrimitiveType = {
       kind: AST.TypeKind.Primitive,
       name: ctx.ID().toString(),
     };
     this.currentTypesStack.push(newType);
-  }
-
-  exitTupleMember() {
-    const member = this.currentTypesStack.pop()!;
-    const tuple = this.currentTypesStack[this.currentTypesStack.length - 1];
-    if (tuple.kind !== AST.TypeKind.Tuple) {
-      throw new Error('Expected tuple to be on the top of stack.');
-    }
-    tuple.members.push(member!);
   }
 
   exitType() {

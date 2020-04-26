@@ -1,9 +1,4 @@
 struct A {
-  ref: T;
-  x: i32;
-  p: string;
-  u: bool;
-  tuple: [i32, i32];
 }
 
 object T {}

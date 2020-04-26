@@ -56,25 +56,11 @@ objectView
   ;
 
 type
-  : tupleType
-  | primitiveType
+  : primitiveType
   ;
 
 primitiveType
   : ID
-  ;
-
-tupleType
-  : OBRACK tupleMembers CBRACK
-  ;
-
-tupleMembers
-  : (tupleMember COM)* tupleMember?
-  ;
-
-tupleMember
-  : tupleType
-  | primitiveType
   ;
 
 // The lexer.
