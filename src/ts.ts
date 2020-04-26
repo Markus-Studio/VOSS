@@ -91,9 +91,7 @@ import { IChangeNotifier, EnumCase, LazyReference } from './runtime';
       }
 
       this.write(
-        `load${upper(field.name)}(): LazyReference<${
-          field.type.object.name
-        }> {
+        `load${upper(field.name)}(): LazyReference<${field.type.object.name}> {
           return this.session$.fetchObjectByUUID(this.${field.name}$UUID);
         }\n`
       );
@@ -128,9 +126,7 @@ import { IChangeNotifier, EnumCase, LazyReference } from './runtime';
       }
 
       this.write(
-        `load${upper(data.name)}(): LazyReference<${
-          data.type.object.name
-        }> {
+        `load${upper(data.name)}(): LazyReference<${data.type.object.name}> {
           return this.session$.fetchObjectByUUID(this.${data.name}$UUID);
         }\n`
       );
@@ -153,7 +149,7 @@ export class Session {
 `);
 
     for (const object of this.program.objects) {
-      this.write(`create${upper(object.name)}() {\n`)
+      this.write(`create${upper(object.name)}() {\n`);
       this.write('}\n');
     }
 
@@ -162,7 +158,7 @@ export class Session {
         continue;
       }
 
-      this.write(`async fetch${plural(upper(object.name))}() {\n`)
+      this.write(`async fetch${plural(upper(object.name))}() {\n`);
       this.write('}\n');
     }
 

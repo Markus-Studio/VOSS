@@ -30,7 +30,7 @@ export interface OneofDeclaration {
 
 export interface OneofMember {
   name: string;
-  type: string;
+  type: Type;
 }
 
 export interface ObjectDeclaration {
@@ -54,7 +54,7 @@ export interface ObjectView {
 export type Type = PrimitiveType;
 
 export const enum TypeKind {
-  Primitive
+  Primitive,
 }
 
 export interface PrimitiveType {

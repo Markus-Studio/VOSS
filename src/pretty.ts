@@ -55,7 +55,11 @@ export class PrettyWriter implements Writer {
       this.lines.push('');
     }
 
-    if (line === '}' && this.lines.length > 0 && this.lines[this.lines.length - 1] === '') {
+    if (
+      line === '}' &&
+      this.lines.length > 0 &&
+      this.lines[this.lines.length - 1] === ''
+    ) {
       this.lines.pop();
     }
 

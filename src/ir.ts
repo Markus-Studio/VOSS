@@ -12,7 +12,7 @@ export const enum TypeKind {
   Struct = 'Struct',
   RootObjectReference = 'RootObject',
   OneofReference = 'Oneof',
-  InternalPrimitive = 'InternalPrimitive'
+  InternalPrimitive = 'InternalPrimitive',
 }
 
 export interface StructReferenceType {
@@ -56,6 +56,7 @@ export type Type =
 export interface FieldInfo {
   name: string;
   type: Type;
+  offset: number;
 }
 
 export const enum DeclarationType {
@@ -64,18 +65,22 @@ export const enum DeclarationType {
   Oneof,
 }
 
-export interface Structure {
-  type: DeclarationType.Structure;
-  name: string;
-  id: number;
+export interface StructureBase {
+  maxElementSize: number;
+  size: number;
   fields: FieldInfo[];
 }
 
-export interface RootObject {
+export interface Structure extends StructureBase {
+  type: DeclarationType.Structure;
+  name: string;
+  id: number;
+}
+
+export interface RootObject extends StructureBase {
   type: DeclarationType.RootObject;
   name: string;
   id: number;
-  fields: FieldInfo[];
   views: View[];
   viewedIn: ViewRef[];
 }
@@ -237,7 +242,7 @@ export function build(tree: AST.Root) {
       name: 'RPCMessage',
       id: NaN,
       cases: [],
-    }
+    },
   };
 
   for (const declaration of sorted) {
@@ -248,6 +253,7 @@ export function build(tree: AST.Root) {
           fields.push({
             name: member.name,
             type: getType(member.type),
+            offset: NaN,
           });
         }
         const struct: Structure = {
@@ -255,6 +261,8 @@ export function build(tree: AST.Root) {
           name: declaration.name,
           id: declaration2ID.get(declaration)!,
           fields,
+          maxElementSize: NaN,
+          size: NaN,
         };
         generated.set(struct.name, struct);
         program.structures.push(struct);
@@ -266,6 +274,7 @@ export function build(tree: AST.Root) {
           fields.push({
             name: member.name,
             type: getType(member.type),
+            offset: NaN,
           });
         }
         const object: RootObject = {
@@ -275,6 +284,8 @@ export function build(tree: AST.Root) {
           views: [],
           viewedIn: [],
           fields,
+          maxElementSize: NaN,
+          size: NaN,
         };
         generated.set(object.name, object);
         program.objects.push(object);
@@ -351,6 +362,14 @@ export function build(tree: AST.Root) {
 
   buildRPC(program);
 
+  for (const value of program.structures) {
+    computeStructInfo(value);
+  }
+
+  for (const value of program.objects) {
+    computeStructInfo(value);
+  }
+
   return program;
 }
 
@@ -360,10 +379,13 @@ function buildRPC(program: Program) {
   const clockData: Structure = {
     type: DeclarationType.Structure,
     name: 'RPC$ClockData',
+    maxElementSize: NaN,
+    size: NaN,
     id: NaN,
     fields: [
       {
         name: 'timestamp',
+        offset: [],
         type: {
           kind: TypeKind.InternalPrimitive,
           name: 'f64',
@@ -379,10 +401,12 @@ function buildRPC(program: Program) {
     value: 1,
     type: {
       kind: TypeKind.Struct,
-      struct: clockData
+      struct: clockData,
     },
   });
 }
+
+function computeStructInfo(struct: StructureBase) {}
 
 function extractTypes(type: string | AST.Type): string[] {
   if (typeof type === 'string') {

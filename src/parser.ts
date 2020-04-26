@@ -41,7 +41,13 @@ class GrammarListener implements VossListener {
     const [nameTerminal, typeTerminal] = ctx.ID();
     const name = nameTerminal.toString();
     const type = (typeTerminal || nameTerminal).toString();
-    this.oneofMembers.push({ name, type });
+    this.oneofMembers.push({
+      name,
+      type: {
+        kind: AST.TypeKind.Primitive,
+        name: type,
+      },
+    });
   }
 
   exitOneofDeclaration(ctx: OneofDeclarationContext) {

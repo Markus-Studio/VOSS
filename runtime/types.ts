@@ -20,11 +20,11 @@ export interface ReadonlyLazyView<T> extends ReadonlyView<T> {
 }
 
 export interface Builder {
-  writeEnum(value: EnumCase<number, Struct>): void;
-  writeStruct(value: Struct): void;
+  writeEnum(offset: number, value: EnumCase<number, Struct>): void;
+  writeStruct(offset: number, value: Struct): void;
 }
 
 export interface Struct {
   maxElementSize: number;
-  serialize(): void;
+  serialize(builder: Builder): void;
 }
