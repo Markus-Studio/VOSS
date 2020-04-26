@@ -1,8 +1,11 @@
 import { IRType } from './type';
-import { Program } from './program';
 
 export class IRObject {
   private fields = new Map<string, IRObjectField>();
+  private views = new Map<string, IRView>();
+  private subjectedViews = new Set<IRView>();
+  private maxElementSize = 0;
+
   private nextOffsetStart = 0;
 
   constructor(
@@ -18,18 +21,27 @@ export class IRObject {
       offset = nextNumberDividableByPowOfTwo(offset, pow);
     }
     this.nextOffsetStart = offset + size;
+    if (size > this.maxElementSize) {
+      this.maxElementSize = size;
+    }
     return offset;
   }
 
   addField(field: IRObjectField) {
-    if (this.fields.has(field.name))
-      throw new Error(
-        `Field ${field.name} already exists on object ${this.name}.`
-      );
+    const name = field.name;
+    if (this.fields.has(name))
+      throw new Error(`Field ${name} already exists on object ${this.name}.`);
 
+    const currentNextOffsetStart = this.nextOffsetStart;
     const offset = this.getNextOffset(field.type.size, field.type.align);
-    this.fields.set(field.name, field);
-    field.attach(this, offset);
+    this.fields.set(name, field);
+    try {
+      field.attach(this, offset);
+    } catch (e) {
+      this.nextOffsetStart = currentNextOffsetStart;
+      this.fields.delete(name);
+      throw e;
+    }
   }
 
   getField(name: string): IRObjectField | undefined {
@@ -40,14 +52,69 @@ export class IRObject {
     return this.fields.values();
   }
 
-  getSize() {
+  getSize(): number {
     return this.nextOffsetStart;
+  }
+
+  getMaxElementSize(): number {
+    return this.maxElementSize;
+  }
+
+  protected ensureViewAccess() {
+    if (!this.isRoot) throw new Error('Views are only for root object types.');
+  }
+
+  addView(view: IRView) {
+    this.ensureViewAccess();
+
+    const name = view.name;
+    if (this.views.has(name))
+      throw new Error(`View ${name} already exists on object ${this.name}`);
+
+    this.views.set(name, view);
+    try {
+      view.attach(this);
+    } catch (e) {
+      this.views.delete(name);
+      throw e;
+    }
+  }
+
+  addSubjectedViewInternal(view: IRView) {
+    this.ensureViewAccess();
+    this.subjectedViews.add(view);
+  }
+
+  getView(name: string): IRView | undefined {
+    this.ensureViewAccess();
+    return this.views.get(name);
+  }
+
+  getViews(): Iterable<IRView> {
+    this.ensureViewAccess();
+    return this.views.values();
+  }
+
+  getSubjectedViews(): Iterable<IRView> {
+    this.ensureViewAccess();
+    return this.subjectedViews.values();
+  }
+
+  hasView(): boolean {
+    this.ensureViewAccess();
+    return this.views.size > 0;
+  }
+
+  isViewed(): boolean {
+    this.ensureViewAccess();
+    return this.subjectedViews.size > 0;
   }
 }
 
 export class IRObjectField {
   private owner?: IRObject;
   private offset: number = NaN;
+  private subjectedViews = new Set<IRView>();
 
   constructor(readonly name: string, readonly type: IRType) {}
 
@@ -58,7 +125,6 @@ export class IRObjectField {
 
     this.owner = object;
     this.offset = offset;
-    console.log(this.name, offset);
   }
 
   isAttached(): boolean {
@@ -70,6 +136,64 @@ export class IRObjectField {
       throw new Error('Field is not attached.');
     }
     return this.offset;
+  }
+
+  getOwner(): IRObject {
+    if (!this.isAttached()) {
+      throw new Error('Field is not attached.');
+    }
+    return this.owner!;
+  }
+
+  addViewInternal(view: IRView) {
+    if (!this.owner)
+      throw new Error('Cannot add view on field. error: not attached.');
+    this.subjectedViews.add(view);
+    try {
+      this.owner.addSubjectedViewInternal(view);
+    } catch (e) {
+      this.subjectedViews.delete(view);
+    }
+  }
+
+  isViewed(): boolean {
+    return this.subjectedViews.size > 0;
+  }
+
+  getSubjectedViews(): Iterable<IRView> {
+    return this.subjectedViews.values();
+  }
+}
+
+// object Host {
+//   @View(target, via) name;
+// }
+export class IRView {
+  private host?: IRObject;
+  readonly target: IRObject;
+
+  constructor(readonly name: string, readonly via: IRObjectField) {
+    this.target = via.getOwner();
+    if (!this.target.isRoot) {
+      throw new Error('Views are only for root objects.');
+    }
+  }
+
+  attach(host: IRObject): void {
+    if (this.host) throw new Error('View is already attached to another host.');
+    if (host.getView(this.name) !== this)
+      throw new Error('Illegal view attach attempt.');
+    this.host = host;
+    this.via.addViewInternal(this);
+  }
+
+  isAttached(): boolean {
+    return !!this.host;
+  }
+
+  getHost(): IRObject {
+    if (!this.host) throw new Error('View is not attached yet.');
+    return this.host;
   }
 }
 

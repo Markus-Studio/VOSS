@@ -1,17 +1,25 @@
 import { IRType } from './type';
 
 export class IREnum {
-  private counter = 0;
+  private nextCaseValue = 0;
   private readonly cases = new Map<string, IREnumCase>();
 
   constructor(readonly id: number, readonly name: string) {}
 
   addCase(enumCase: IREnumCase) {
-    if (this.cases.has(enumCase.name))
-      throw new Error(`Name ${enumCase.name} is already in use.`);
+    const name = enumCase.name;
+    if (this.cases.has(name))
+      throw new Error(`Name ${name} is already in use.`);
 
-    this.cases.set(enumCase.name, enumCase);
-    enumCase.attach(this, this.counter++);
+    const value = this.nextCaseValue++;
+    this.cases.set(name, enumCase);
+    try {
+      enumCase.attach(this, value);
+    } catch (e) {
+      this.nextCaseValue = value;
+      this.cases.delete(name);
+      throw e;
+    }
   }
 
   getCase(name: string): IREnumCase | undefined {

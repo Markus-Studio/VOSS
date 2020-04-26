@@ -1,4 +1,5 @@
 struct A {
+  s: i32;
 }
 
 object T {}

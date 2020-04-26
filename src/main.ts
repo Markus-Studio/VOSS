@@ -1,9 +1,8 @@
 import { parse } from './parser';
-import { TypeScriptBackend } from './ts';
-import { PrettyWriter } from './pretty';
-import { readFileSync, writeFileSync } from 'fs';
+import { readFileSync } from 'fs';
 import { join } from 'path';
-import { build } from './ir';
+import { genIR } from './ir/gen';
+import { Program } from './ir/program';
 
 const filename = process.argv[2] || 'test.voss';
 if (!filename) {
@@ -15,8 +14,11 @@ const filePath = join(process.cwd(), filename);
 
 const source = readFileSync(filePath, 'utf-8');
 const tree = parse(source);
-const program = build(tree);
-
-const writer = new PrettyWriter();
-new TypeScriptBackend(writer, program);
-writeFileSync(filePath + '.ts', writer.getSource());
+let program: Program;
+try {
+  program = genIR(tree);
+} catch (e) {
+  console.error('Could not verify the source document.');
+  console.error('Error: ' + e.message);
+  process.exit(-1);
+}
