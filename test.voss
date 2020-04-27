@@ -1,5 +1,7 @@
 struct A {
   s: i32;
+  t: T;
+  p: u8;
 }
 
 object T {}

@@ -2,6 +2,7 @@ import { IRObject } from './object';
 import { IREnum } from './enum';
 
 export type PrimitiveTypeName =
+  | 'uuid'
   | 'i8'
   | 'i16'
   | 'i32'
@@ -16,6 +17,7 @@ export type PrimitiveTypeName =
 const PrimitiveTypeSizeTable: Record<PrimitiveTypeName, number> = Object.assign(
   Object.create(null),
   {
+    uuid: 16,
     i8: 1,
     i16: 2,
     i32: 4,
@@ -36,19 +38,30 @@ export class IRType {
   private constructor(
     readonly name: string,
     readonly size: number,
-    readonly target?: IRObject | IREnum,
-    readonly align: number = size
+    readonly align: number = size,
+    readonly target?: IRObject | IREnum
   ) {
     this.isPrimitive = !target;
+    if (target && target.name !== name) {
+      throw new Error('Type name must be the same as targets name.');
+    }
   }
 
   static Primitive(name: PrimitiveTypeName): IRType {
     const size = PrimitiveTypeSizeTable[name];
-    return new IRType(name, size);
+    const align = name === 'uuid' ? 1 : size;
+    return new IRType(name, size, align);
   }
 
   static Object(object: IRObject) {
-    return new IRType(object.name, 4, object);
+    if (object.isRoot) {
+      // For root objects we store the UUID, which is char[16], so
+      // it has the alignment of 1, and takes 16 bytes.
+      return new IRType(object.name, 16, 1, object);
+    } else {
+      // For an struct we only store a relative offset to its content.
+      return new IRType(object.name, 4, 4, object);
+    }
   }
 
   static Enum(irEnum: IREnum) {
@@ -57,11 +70,18 @@ export class IRType {
     // will force the struct builder to find an offset for the enum that is
     // dividable by 8 (one big U64) instead of 4 which is the correct offset,
     // so here we set the align explicitly to 4.
-    return new IRType(irEnum.name, 8, irEnum, 4);
+    return new IRType(irEnum.name, 8, 4, irEnum);
   }
 
   static isPrimitive(name: string): name is PrimitiveTypeName {
     return name in PrimitiveTypeSizeTable;
+  }
+
+  asPrimitiveName(): PrimitiveTypeName {
+    if (!this.isPrimitive) {
+      throw new Error('Type is not a primitive.');
+    }
+    return this.name as any;
   }
 
   asObject(): IRObject {

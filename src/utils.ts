@@ -7,10 +7,8 @@ export function toCamelCase(str: string) {
 }
 
 export function toPascalCase(str: string) {
-  return str.replace(
-    /(\w)(\w*)/g,
-    (_, g1, g2) => g1.toUpperCase() + g2.toLowerCase()
-  );
+  const camel = toCamelCase(str);
+  return camel[0].toUpperCase() + camel.slice(1);
 }
 
 export class Counter<K> {

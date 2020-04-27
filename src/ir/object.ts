@@ -12,7 +12,10 @@ export class IRObject {
     readonly isRoot: boolean,
     readonly id: number,
     readonly name: string
-  ) {}
+  ) {
+    if (isRoot)
+      this.addField(new IRObjectField('uuid', IRType.Primitive('uuid')));
+  }
 
   private getNextOffset(size: number, align: number = size): number {
     let offset = this.nextOffsetStart;

@@ -1,4 +1,4 @@
-export class Builder {
+export class IBuilder {
   private buffer = new Uint8Array(256);
   private view = new DataView(this.buffer);
 

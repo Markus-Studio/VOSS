@@ -1,7 +1,7 @@
 import { IREnum, IREnumCase } from './enum';
 import { Program } from './program';
 import { IRObject, IRObjectField } from './object';
-import { toPascalCase } from 'src/utils';
+import { toPascalCase } from '../utils';
 
 const enum RPCMessageCategory {
   Clock = 0,
@@ -53,7 +53,7 @@ function buildRootFetchMessage(program: Program, object: IRObject): IREnumCase {
   const rootFetchData = new IRObject(
     false,
     InternalStructID.ClockData,
-    '_rootFetch' + toPascalCase(object.name) + 'Request'
+    '_RootFetch' + toPascalCase(object.name) + 'Request'
   );
   program.addObject(rootFetchData);
   return new IREnumCase(

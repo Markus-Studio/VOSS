@@ -1,8 +1,9 @@
 import { parse } from './frontend/parser';
-import { readFileSync } from 'fs';
+import { readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { genIR } from './ir/gen';
 import { Program } from './ir/program';
+import { generateTypescriptClient } from './backend/typescript';
 
 const filename = process.argv[2] || 'test.voss';
 if (!filename) {
@@ -22,3 +23,6 @@ try {
   console.error('Error: ' + e.message);
   process.exit(-1);
 }
+
+const typescriptSource = generateTypescriptClient(program);
+writeFileSync(filePath + '.ts', typescriptSource);
