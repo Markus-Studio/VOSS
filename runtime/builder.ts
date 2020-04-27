@@ -2,8 +2,8 @@ import { Builder, Struct, EnumCase } from './types';
 import { nextNumberDividableByPowOfTwo, fastSqrtTwo } from './utils';
 
 export class IBuilder implements Builder {
-  private buffer = new Uint8Array(256);
-  private view = new DataView(this.buffer);
+  private uint8array = new Uint8Array(256);
+  private view = new DataView(this.uint8array.buffer);
 
   private offsetStack: number[] = [];
   private currentOffset = 0;
@@ -28,16 +28,16 @@ export class IBuilder implements Builder {
   }
 
   private grow() {
-    if (this.nextOffset <= this.buffer.byteLength) return;
-    const newSize = this.buffer.byteLength * 2;
+    if (this.nextOffset <= this.uint8array.byteLength) return;
+    const newSize = this.uint8array.byteLength * 2;
     const newBuffer = new Uint8Array(newSize);
-    newBuffer.set(this.buffer);
-    this.buffer = newBuffer;
-    this.view = new DataView(this.buffer);
+    newBuffer.set(this.uint8array);
+    this.uint8array = newBuffer;
+    this.view = new DataView(this.uint8array.buffer);
   }
 
   build(): Uint8Array {
-    return this.buffer.slice(0, this.nextOffset);
+    return this.uint8array.slice(0, this.nextOffset);
   }
 
   struct(offset: number, value: Struct): void {
@@ -69,29 +69,6 @@ export class IBuilder implements Builder {
   enum(offset: number, value: EnumCase): void {
     this.view.setUint32(offset + this.currentOffset, value.type, true);
     this.struct(offset + 4, value.value);
-  }
-
-  string(offset: number, value: string): void {
-    offset += this.currentOffset;
-
-    if (value.length === 0) {
-      this.view.setUint32(offset, 0);
-      this.view.setUint32(offset + 4, 0);
-      return;
-    }
-
-    const stringOffset = this.nextOffset;
-    const size = value.length * 2;
-    const relative = stringOffset - offset;
-    this.nextOffset += size;
-    this.grow();
-
-    this.view.setUint32(offset, size, true);
-    this.view.setUint32(offset + 4, relative, true);
-
-    for (let i = 0, j = stringOffset; i < value.length; ++i, ++j) {
-      this.view.setUint16(j, value.charCodeAt(i), true);
-    }
   }
 
   uuid(offset: number, value: string): void {
@@ -133,5 +110,32 @@ export class IBuilder implements Builder {
 
   f64(offset: number, value: number): void {
     this.view.setFloat64(offset + this.currentOffset, value, true);
+  }
+
+  bool(offset: number, value: boolean): void {
+    this.view.setUint8(offset + this.currentOffset, value ? 1 : 0);
+  }
+
+  string(offset: number, value: string): void {
+    offset += this.currentOffset;
+
+    if (value.length === 0) {
+      this.view.setUint32(offset, 0);
+      this.view.setUint32(offset + 4, 0);
+      return;
+    }
+
+    const stringOffset = this.nextOffset;
+    const size = value.length * 2;
+    const relative = stringOffset - offset;
+    this.nextOffset += size;
+    this.grow();
+
+    this.view.setUint32(offset, size, true);
+    this.view.setUint32(offset + 4, relative, true);
+
+    for (let i = 0, j = stringOffset; i < value.length; ++i, ++j) {
+      this.view.setUint16(j, value.charCodeAt(i), true);
+    }
   }
 }

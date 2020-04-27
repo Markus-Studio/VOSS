@@ -25,7 +25,6 @@ export interface ReadonlyLazyView<T> extends ReadonlyView<T> {
 export interface Builder {
   struct(offset: number, value: Struct): void;
   enum(offset: number, value: EnumCase): void;
-  string(offset: number, value: string): void;
   uuid(offset: number, value: string): void;
   u8(offset: number, value: number): void;
   u16(offset: number, value: number): void;
@@ -35,6 +34,8 @@ export interface Builder {
   i32(offset: number, value: number): void;
   f32(offset: number, value: number): void;
   f64(offset: number, value: number): void;
+  bool(offset: number, value: boolean): void;
+  string(offset: number, value: string): void;
 }
 
 export interface Reader {

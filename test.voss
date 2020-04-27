@@ -1,7 +1,9 @@
-struct A {
-  s: i32;
-  t: T;
-  p: u8;
+struct Test {
+  value: i32;
+  v: bool;
+  data: Test2;
 }
 
-object T {}
+struct Test2 {
+  t: u32;
+}
