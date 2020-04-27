@@ -1,6 +1,4 @@
-import { Writer } from './writer';
-
-export class PrettyWriter implements Writer {
+export class PrettyWriter {
   private lines: string[] = [];
   private _indentLevel = 0;
   private currentIndent = '';

@@ -1,14 +1,14 @@
-import * as AST from '../ast';
-import { Counter } from '../counter';
+import * as AST from '../frontend/ast';
+import { Counter } from '../utils';
 import * as toposort from 'toposort';
 import { Program } from './program';
-import { IRObject, IRObjectField } from './object';
+import { IRObject, IRObjectField, IRView } from './object';
 import { IREnum, IREnumCase } from './enum';
 
 export function genIR(ast: AST.Root) {
   const declaration2id = new Map<AST.Declaration, number>();
   const name2declaration = new Map<string, AST.Declaration>();
-  const counter = new Counter<AST.DeclarationKind>();
+  const counter = new Counter<AST.DeclarationKind>(32);
   const dependencyGraph: [string, string][] = [];
 
   for (const declaration of ast) {
@@ -71,7 +71,24 @@ function genRootObject(
     genField(program, object, fieldDeclaration);
   }
 
-  // TODO(qti3e) Build views.
+  for (const viewDeclaration of declaration.views) {
+    genView(program, object, viewDeclaration);
+  }
+}
+
+function genView(
+  program: Program,
+  object: IRObject,
+  declaration: AST.ObjectView
+) {
+  const target = program.resolveObject(declaration.object);
+  const field = target.getField(declaration.via);
+  if (!field)
+    throw new Error(
+      `Field ${declaration.via} does not exists on ${target.name}`
+    );
+  const view = new IRView(declaration.name, field);
+  object.addView(view);
 }
 
 function genStructure(
@@ -105,17 +122,19 @@ function genEnum(
   const irEnum = new IREnum(id, declaration.name);
   program.addEnum(irEnum);
 
+  let counter = 0;
   for (const caseDeclaration of declaration.members) {
-    genEnumCase(program, irEnum, caseDeclaration);
+    genEnumCase(program, irEnum, caseDeclaration, counter++);
   }
 }
 
 function genEnumCase(
   program: Program,
   owner: IREnum,
-  declaration: AST.OneofMember
+  declaration: AST.OneofMember,
+  value: number
 ) {
   const type = program.resolveType(declaration.type.name);
-  const enumCase = new IREnumCase(declaration.name, type);
+  const enumCase = new IREnumCase(declaration.name, type, value);
   owner.addCase(enumCase);
 }

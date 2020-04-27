@@ -1,6 +1,6 @@
 import { ANTLRInputStream, CommonTokenStream } from 'antlr4ts';
 import { ParseTreeWalker } from 'antlr4ts/tree/ParseTreeWalker';
-import { VossLexer } from '../grammar/VossLexer';
+import { VossLexer } from '../../grammar/VossLexer';
 import {
   VossParser,
   StructDeclarationContext,
@@ -11,8 +11,8 @@ import {
   PrimitiveTypeContext,
   ObjectFieldContext,
   ObjectViewContext,
-} from '../grammar/VossParser';
-import { VossListener } from '../grammar/VossListener';
+} from '../../grammar/VossParser';
+import { VossListener } from '../../grammar/VossListener';
 import * as AST from './ast';
 
 class GrammarListener implements VossListener {

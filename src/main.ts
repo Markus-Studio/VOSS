@@ -1,4 +1,4 @@
-import { parse } from './parser';
+import { parse } from './frontend/parser';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { genIR } from './ir/gen';

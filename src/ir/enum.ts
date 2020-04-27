@@ -1,8 +1,8 @@
 import { IRType } from './type';
 
 export class IREnum {
-  private nextCaseValue = 0;
   private readonly cases = new Map<string, IREnumCase>();
+  private readonly usedValues = new Set<number>();
 
   constructor(readonly id: number, readonly name: string) {}
 
@@ -10,13 +10,17 @@ export class IREnum {
     const name = enumCase.name;
     if (this.cases.has(name))
       throw new Error(`Name ${name} is already in use.`);
+    if (this.usedValues.has(enumCase.value))
+      throw new Error(
+        `Value ${enumCase.value} is used by another enum member.`
+      );
 
-    const value = this.nextCaseValue++;
+    this.usedValues.add(enumCase.value);
     this.cases.set(name, enumCase);
     try {
-      enumCase.attach(this, value);
+      enumCase.attach(this);
     } catch (e) {
-      this.nextCaseValue = value;
+      this.usedValues.delete(enumCase.value);
       this.cases.delete(name);
       throw e;
     }
@@ -33,31 +37,26 @@ export class IREnum {
 
 export class IREnumCase {
   private owner?: IREnum;
-  private value: number = NaN;
 
-  constructor(readonly name: string, readonly type: IRType) {
+  constructor(
+    readonly name: string,
+    readonly type: IRType,
+    readonly value: number
+  ) {
     if (!this.type.isStructure) {
       throw new Error('EnumCase can only be of non-root structure type.');
     }
   }
 
-  attach(owner: IREnum, value: number): void {
+  attach(owner: IREnum): void {
     if (this.owner)
       throw new Error(`Enum case ${this.name} is already attached.`);
     if (owner.getCase(this.name) !== this)
       throw new Error('Illegal attach attempt.');
     this.owner = owner;
-    this.value = value;
   }
 
   isAttached(): boolean {
     return !!this.owner;
-  }
-
-  getValue(): number {
-    if (!this.isAttached()) {
-      throw new Error('Field is not attached.');
-    }
-    return this.value;
   }
 }

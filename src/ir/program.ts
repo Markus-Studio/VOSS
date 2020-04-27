@@ -1,11 +1,13 @@
 import { IRObject } from './object';
 import { IRType } from './type';
 import { IREnum } from './enum';
+import { buildRPC } from './rpc';
 
 export class Program {
   private readonly usedNames = new Set<string>();
   private readonly objects = new Map<string, IRObject>();
   private readonly enums = new Map<string, IREnum>();
+  private _rpc?: IREnum;
 
   resolveType(name: string): IRType {
     if (IRType.isPrimitive(name)) {
@@ -69,7 +71,14 @@ export class Program {
     return this.enums.values();
   }
 
-  getObjects(): Iterator<IRObject> {
+  getObjects(): Iterable<IRObject> {
     return this.objects.values();
+  }
+
+  getRPC() {
+    if (this._rpc) {
+      return this._rpc;
+    }
+    return (this._rpc = buildRPC(this));
   }
 }
