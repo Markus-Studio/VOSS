@@ -7,8 +7,8 @@ ws.onopen = () => {
   const enc = new TextEncoder(); // always utf-8
   const text = enc.encode('This is a string converted to a Uint8Array');
   ws.send(text);
-}
+};
 
-ws.onmessage = async (event) => {
-  console.log('received', await event.data.arrayBuffer())
-}
+ws.onmessage = async event => {
+  console.log('received', await event.data.arrayBuffer());
+};

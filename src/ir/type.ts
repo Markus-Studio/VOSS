@@ -14,23 +14,24 @@ export type PrimitiveTypeName =
   | 'bool'
   | 'str';
 
-const PrimitiveTypeSizeTable: Record<PrimitiveTypeName, number> = Object.assign(
-  Object.create(null),
-  {
-    uuid: 16,
-    i8: 1,
-    i16: 2,
-    i32: 4,
-    u8: 1,
-    u16: 2,
-    u32: 4,
-    f32: 4,
-    f64: 8,
-    bool: 1,
-    // For strings we store a relative offset to the beginning as a U32 integer.
-    str: 4,
-  }
-);
+const PrimitiveTypeSizeTable: Record<
+  PrimitiveTypeName,
+  number | [number, number]
+> = Object.assign(Object.create(null), {
+  uuid: [16, 1],
+  i8: 1,
+  i16: 2,
+  i32: 4,
+  u8: 1,
+  u16: 2,
+  u32: 4,
+  f32: 4,
+  f64: 8,
+  bool: 1,
+  // Strings are stored as net-string, as a tuple (ByteLength, Offset), where
+  // both are of type U32.
+  str: [8, 4],
+});
 
 export class IRType {
   readonly isPrimitive: boolean;
@@ -48,8 +49,8 @@ export class IRType {
   }
 
   static Primitive(name: PrimitiveTypeName): IRType {
-    const size = PrimitiveTypeSizeTable[name];
-    const align = name === 'uuid' ? 1 : size;
+    const data = PrimitiveTypeSizeTable[name];
+    const [size, align] = typeof data === 'number' ? [data, data] : data;
     return new IRType(name, size, align);
   }
 

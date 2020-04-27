@@ -1,10 +1,12 @@
 import { IRType } from './type';
+import { fastSqrtTwo, nextNumberDividableByPowOfTwo } from '../utils';
 
 export class IRObject {
   private fields = new Map<string, IRObjectField>();
   private views = new Map<string, IRView>();
   private subjectedViews = new Set<IRView>();
   private maxElementSize = 0;
+  private maxElementAlignment = 0;
 
   private nextOffsetStart = 0;
 
@@ -26,6 +28,9 @@ export class IRObject {
     this.nextOffsetStart = offset + size;
     if (size > this.maxElementSize) {
       this.maxElementSize = size;
+    }
+    if (align > this.maxElementAlignment) {
+      this.maxElementAlignment = align;
     }
     return offset;
   }
@@ -61,6 +66,10 @@ export class IRObject {
 
   getMaxElementSize(): number {
     return this.maxElementSize;
+  }
+
+  getMaxElementAlignment(): number {
+    return this.maxElementAlignment;
   }
 
   protected ensureViewAccess() {
@@ -198,18 +207,4 @@ export class IRView {
     if (!this.host) throw new Error('View is not attached yet.');
     return this.host;
   }
-}
-
-function nextNumberDividableByPowOfTwo(number: number, pow: number): number {
-  const n = (number >> pow) << pow;
-  if (n === number) return n;
-  return n + (1 << pow);
-}
-
-function fastSqrtTwo(n: number): number {
-  let i = 0;
-  for (; n; n >>= 1) {
-    i++;
-  }
-  return i - 1;
 }

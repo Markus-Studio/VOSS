@@ -6,11 +6,11 @@ import {
   Reader,
   Struct
 } from './runtime';
-
 type UUID = string;
 
 export class T implements Struct {
-  readonly _maxElementSize = 16;
+  readonly _maxElementAlignment = 1;
+  readonly _size = 16;
   constructor(
     readonly $session: VossSession,
     private __uuid: UUID,
@@ -33,7 +33,8 @@ export class T implements Struct {
 }
 
 export class A implements Struct {
-  readonly _maxElementSize = 16;
+  readonly _maxElementAlignment = 4;
+  readonly _size = 21;
   constructor(
     readonly $session: VossSession,
     private __s: number,
@@ -70,7 +71,8 @@ export class A implements Struct {
 }
 
 export class _ClockData implements Struct {
-  readonly _maxElementSize = 8;
+  readonly _maxElementAlignment = 8;
+  readonly _size = 8;
   constructor(
     readonly $session: VossSession,
     private __timestamp: number,
@@ -93,7 +95,8 @@ export class _ClockData implements Struct {
 }
 
 export class _RootFetchTRequest implements Struct {
-  readonly _maxElementSize = 0;
+  readonly _maxElementAlignment = 0;
+  readonly _size = 0;
   constructor(
     readonly $session: VossSession,
   ) {}
@@ -107,5 +110,3 @@ export class _RootFetchTRequest implements Struct {
     );
   }
 }
-
-class VossSession {}

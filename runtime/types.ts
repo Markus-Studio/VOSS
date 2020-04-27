@@ -1,4 +1,7 @@
-export interface EnumCase<T extends number, V extends Struct> {
+export interface EnumCase<
+  T extends number = number,
+  V extends Struct = Struct
+> {
   readonly type: T;
   readonly value: V;
 }
@@ -20,6 +23,9 @@ export interface ReadonlyLazyView<T> extends ReadonlyView<T> {
 }
 
 export interface Builder {
+  struct(offset: number, value: Struct): void;
+  enum(offset: number, value: EnumCase): void;
+  string(offset: number, value: string): void;
   uuid(offset: number, value: string): void;
   u8(offset: number, value: number): void;
   u16(offset: number, value: number): void;
@@ -44,6 +50,7 @@ export interface Reader {
 }
 
 export interface Struct {
-  _maxElementSize: number;
+  _maxElementAlignment: number;
+  _size: number;
   _serialize(builder: Builder): void;
 }

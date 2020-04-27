@@ -41,7 +41,10 @@ export function generateTypescriptClient(program: Program): string {
 
 function generateObjectClass(writer: PrettyWriter, object: IRObject): void {
   writer.write(`export class ${object.name} implements Struct {\n`);
-  writer.write(`readonly _maxElementSize = ${object.getMaxElementSize()};\n\n`);
+  writer.write(
+    `readonly _maxElementAlignment = ${object.getMaxElementAlignment()};\n`
+  );
+  writer.write(`readonly _size = ${object.getSize()};\n`);
 
   writer.write('constructor(\n');
   writer.indent();

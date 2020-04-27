@@ -1,3 +1,5 @@
+export * from '../runtime/utils';
+
 export function toCamelCase(str: string) {
   return str
     .replace(/(?:^\w|[A-Z]|\b\w)/g, (word, index) =>
