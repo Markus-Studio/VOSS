@@ -5,25 +5,23 @@ export class IReader implements Reader {
   private offsetStack: number[] = [];
   private currentOffset: number = 0;
 
-  constructor(readonly session: any, buffer: ArrayBuffer) {
+  constructor(buffer: ArrayBuffer) {
     this.view = new DataView(buffer);
   }
 
   static DeserializeStruct<T extends Struct>(
-    session: any,
     buffer: ArrayBuffer,
     deserializer: DeserializeFn<T>
   ): T {
-    const reader = new IReader(session, buffer);
-    return deserializer(session, reader);
+    const reader = new IReader(buffer);
+    return deserializer(reader);
   }
 
   static DeserializeEnum<T extends Struct>(
-    session: any,
     buffer: ArrayBuffer,
     map: Record<number, DeserializeFn<T>>
   ): EnumCase<number, T> {
-    const reader = new IReader(session, buffer);
+    const reader = new IReader(buffer);
     return reader.enum(0, map);
   }
 
@@ -45,7 +43,7 @@ export class IReader implements Reader {
     this.currentOffset = structOffset;
 
     try {
-      return deserializer(this.session, this);
+      return deserializer(this);
     } finally {
       this.currentOffset = this.offsetStack.pop()!;
     }

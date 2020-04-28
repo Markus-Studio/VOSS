@@ -38,7 +38,7 @@ export interface Builder {
   str(offset: number, value: string): void;
 }
 
-export type DeserializeFn<T> = (session: any, reader: Reader) => T;
+export type DeserializeFn<T> = (reader: Reader) => T;
 
 export interface Reader {
   struct<T extends Struct>(offset: number, deserializer: DeserializeFn<T>): T;
@@ -60,7 +60,7 @@ export interface Reader {
 }
 
 export interface Struct {
-  _maxElementAlignment: number;
-  _size: number;
-  _serialize(builder: Builder): void;
+  maxElementAlignment: number;
+  size: number;
+  serialize(builder: Builder): void;
 }

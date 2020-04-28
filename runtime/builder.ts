@@ -15,8 +15,8 @@ export class IBuilder implements Builder {
   }
 
   static SerializeStruct(struct: Struct): Uint8Array {
-    const builder = new IBuilder(struct._size);
-    struct._serialize(builder);
+    const builder = new IBuilder(struct.size);
+    struct.serialize(builder);
     return builder.build();
   }
 
@@ -41,8 +41,8 @@ export class IBuilder implements Builder {
   }
 
   struct(offset: number, value: Struct): void {
-    const size = value._size;
-    const align = value._maxElementAlignment;
+    const size = value.size;
+    const align = value.maxElementAlignment;
     const pointerOffset = offset + this.currentOffset;
 
     if (size === 0) {
@@ -62,7 +62,7 @@ export class IBuilder implements Builder {
 
     this.offsetStack.push(this.currentOffset);
     this.currentOffset = structOffset;
-    value._serialize(this);
+    value.serialize(this);
     this.currentOffset = this.offsetStack.pop()!;
   }
 

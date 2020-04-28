@@ -2,157 +2,189 @@
 
 import {
   Builder,
+  ChangeNotifier,
   DeserializeFn,
   EnumCase,
+  IChangeNotifier,
   Reader,
-  Struct,
-  IBuilder,
-  IReader
+  Struct
 } from './runtime';
 type UUID = string;
 
+export interface Person$Data {
+  name: string,
+}
+
 export class Person implements Struct {
-  readonly _maxElementAlignment = 4;
-  readonly _size = 8;
-  constructor(
-    readonly $session: VossSession,
-    private __name: string,
-  ) {}
+  readonly maxElementAlignment = 4;
+  readonly size = 8;
+  constructor(private data: Person$Data) {}
 
-  get name() {
-    return this.__name;
+  getName() {
+    return this.data.name;
   }
 
-  _serialize(builder: Builder) {
-    builder.str(0, this.__name);
+  setName(value: string): Person {
+    return new Person({...this.data, name: value});
   }
 
-  static deserialize(session: VossSession, reader: Reader) {
-    return new Person(
-      session,
-      reader.str(0),
-    );
+  serialize(builder: Builder) {
+    builder.str(0, this.data.name);
   }
+
+  static deserialize(reader: Reader) {
+    return new Person({
+        name: reader.str(0),
+    });
+  }
+}
+
+export interface Point3D$Data {
+  x: number,
+  y: number,
+  z: number,
 }
 
 export class Point3D implements Struct {
-  readonly _maxElementAlignment = 8;
-  readonly _size = 24;
-  constructor(
-    readonly $session: VossSession,
-    private __x: number,
-    private __y: number,
-    private __z: number,
-  ) {}
+  readonly maxElementAlignment = 8;
+  readonly size = 24;
+  constructor(private data: Point3D$Data) {}
 
-  get x() {
-    return this.__x;
+  getX() {
+    return this.data.x;
   }
 
-  get y() {
-    return this.__y;
+  setX(value: number): Point3D {
+    return new Point3D({...this.data, x: value});
   }
 
-  get z() {
-    return this.__z;
+  getY() {
+    return this.data.y;
   }
 
-  _serialize(builder: Builder) {
-    builder.f64(0, this.__x);
-    builder.f64(8, this.__y);
-    builder.f64(16, this.__z);
+  setY(value: number): Point3D {
+    return new Point3D({...this.data, y: value});
   }
 
-  static deserialize(session: VossSession, reader: Reader) {
-    return new Point3D(
-      session,
-      reader.f64(0),
-      reader.f64(8),
-      reader.f64(16),
-    );
+  getZ() {
+    return this.data.z;
   }
+
+  setZ(value: number): Point3D {
+    return new Point3D({...this.data, z: value});
+  }
+
+  serialize(builder: Builder) {
+    builder.f64(0, this.data.x);
+    builder.f64(8, this.data.y);
+    builder.f64(16, this.data.z);
+  }
+
+  static deserialize(reader: Reader) {
+    return new Point3D({
+        x: reader.f64(0),
+        y: reader.f64(8),
+        z: reader.f64(16),
+    });
+  }
+}
+
+export interface Point2D$Data {
+  x: number,
+  y: number,
 }
 
 export class Point2D implements Struct {
-  readonly _maxElementAlignment = 8;
-  readonly _size = 16;
-  constructor(
-    readonly $session: VossSession,
-    private __x: number,
-    private __y: number,
-  ) {}
+  readonly maxElementAlignment = 8;
+  readonly size = 16;
+  constructor(private data: Point2D$Data) {}
 
-  get x() {
-    return this.__x;
+  getX() {
+    return this.data.x;
   }
 
-  get y() {
-    return this.__y;
+  setX(value: number): Point2D {
+    return new Point2D({...this.data, x: value});
   }
 
-  _serialize(builder: Builder) {
-    builder.f64(0, this.__x);
-    builder.f64(8, this.__y);
+  getY() {
+    return this.data.y;
   }
 
-  static deserialize(session: VossSession, reader: Reader) {
-    return new Point2D(
-      session,
-      reader.f64(0),
-      reader.f64(8),
-    );
+  setY(value: number): Point2D {
+    return new Point2D({...this.data, y: value});
   }
+
+  serialize(builder: Builder) {
+    builder.f64(0, this.data.x);
+    builder.f64(8, this.data.y);
+  }
+
+  static deserialize(reader: Reader) {
+    return new Point2D({
+        x: reader.f64(0),
+        y: reader.f64(8),
+    });
+  }
+}
+
+export interface _ClockData$Data {
+  timestamp: number,
 }
 
 export class _ClockData implements Struct {
-  readonly _maxElementAlignment = 8;
-  readonly _size = 8;
-  constructor(
-    readonly $session: VossSession,
-    private __timestamp: number,
-  ) {}
+  readonly maxElementAlignment = 8;
+  readonly size = 8;
+  constructor(private data: _ClockData$Data) {}
 
-  get timestamp() {
-    return this.__timestamp;
+  getTimestamp() {
+    return this.data.timestamp;
   }
 
-  _serialize(builder: Builder) {
-    builder.f64(0, this.__timestamp);
+  setTimestamp(value: number): _ClockData {
+    return new _ClockData({...this.data, timestamp: value});
   }
 
-  static deserialize(session: VossSession, reader: Reader) {
-    return new _ClockData(
-      session,
-      reader.f64(0),
-    );
+  serialize(builder: Builder) {
+    builder.f64(0, this.data.timestamp);
   }
+
+  static deserialize(reader: Reader) {
+    return new _ClockData({
+        timestamp: reader.f64(0),
+    });
+  }
+}
+
+export interface _ReplyData$Data {
+  replyId: number,
 }
 
 export class _ReplyData implements Struct {
-  readonly _maxElementAlignment = 4;
-  readonly _size = 4;
-  constructor(
-    readonly $session: VossSession,
-    private __replyId: number,
-  ) {}
+  readonly maxElementAlignment = 4;
+  readonly size = 4;
+  constructor(private data: _ReplyData$Data) {}
 
-  get replyId() {
-    return this.__replyId;
+  getReplyId() {
+    return this.data.replyId;
   }
 
-  _serialize(builder: Builder) {
-    builder.u32(0, this.__replyId);
+  setReplyId(value: number): _ReplyData {
+    return new _ReplyData({...this.data, replyId: value});
   }
 
-  static deserialize(session: VossSession, reader: Reader) {
-    return new _ReplyData(
-      session,
-      reader.u32(0),
-    );
+  serialize(builder: Builder) {
+    builder.u32(0, this.data.replyId);
+  }
+
+  static deserialize(reader: Reader) {
+    return new _ReplyData({
+        replyId: reader.u32(0),
+    });
   }
 }
 
-export enum Point$Type {
+export const enum Point$Type {
   Point2D = 0,
   Point3D = 1,
 }
@@ -167,7 +199,7 @@ export const Point$DeserializerMap: Record<Point$Type, DeserializeFn<any>> = {
   [Point$Type.Point3D]: Point3D.deserialize,
 }
 
-export enum _RPCMessage$Type {
+export const enum _RPCMessage$Type {
   Clock = 0,
   Reply = 1,
 }
@@ -181,13 +213,3 @@ export const _RPCMessage$DeserializerMap: Record<_RPCMessage$Type, DeserializeFn
   [_RPCMessage$Type.Clock]: _ClockData.deserialize,
   [_RPCMessage$Type.Reply]: _ReplyData.deserialize,
 }
-
-class VossSession {}
-
-const session = new VossSession();
-const person = new Person(session, 'Hello World')
-const buffer = IBuilder.SerializeStruct(person);
-console.log(buffer);
-
-const decoded = IReader.DeserializeStruct(session, buffer.buffer, Person.deserialize);
-console.log(decoded.name);

@@ -2,7 +2,9 @@ use actix::{Actor, StreamHandler};
 use actix_web::{web, App, Error, HttpRequest, HttpResponse, HttpServer};
 use actix_web_actors::ws;
 
-struct MyWs;
+pub struct MyWs {
+    user: [u8;16];
+}
 
 impl Actor for MyWs {
     type Context = ws::WebsocketContext<Self>;

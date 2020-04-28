@@ -48,7 +48,8 @@ export class PrettyWriter {
       this.lines.length > 0 &&
       line.indexOf('{') > 0 &&
       line.indexOf('}') < 0 &&
-      this.lines[this.lines.length - 1] !== ''
+      this.lines[this.lines.length - 1] !== '' &&
+      !this.lines[this.lines.length - 1].endsWith('{')
     ) {
       this.lines.push('');
     }

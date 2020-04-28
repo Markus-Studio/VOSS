@@ -19,7 +19,7 @@ export class IChangeNotifier implements ChangeNotifier {
     this.listeners.delete(cb);
   }
 
-  emitChange(): void {
+  protected emitChange(): void {
     for (const listener of this.listeners) {
       listener();
     }
