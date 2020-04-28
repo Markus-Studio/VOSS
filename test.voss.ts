@@ -5,68 +5,77 @@ import {
   DeserializeFn,
   EnumCase,
   Reader,
-  Struct
+  Struct,
+  IBuilder,
+  IReader
 } from './runtime';
 type UUID = string;
 
-export class Test2 implements Struct {
-  readonly _maxElementAlignment = 4;
-  readonly _size = 4;
+export class Point3D implements Struct {
+  readonly _maxElementAlignment = 8;
+  readonly _size = 24;
   constructor(
     readonly $session: VossSession,
-    private __t: number,
+    private __x: number,
+    private __y: number,
+    private __z: number,
   ) {}
 
-  get t() {
-    return this.__t;
+  get x() {
+    return this.__x;
+  }
+
+  get y() {
+    return this.__y;
+  }
+
+  get z() {
+    return this.__z;
   }
 
   _serialize(builder: Builder) {
-    builder.u32(0, this.__t);
+    builder.f64(0, this.__x);
+    builder.f64(8, this.__y);
+    builder.f64(16, this.__z);
   }
 
   static deserialize(session: VossSession, reader: Reader) {
-    return new Test2(
+    return new Point3D(
       session,
-      reader.u32(0),
+      reader.f64(0),
+      reader.f64(8),
+      reader.f64(16),
     );
   }
 }
 
-export class Test implements Struct {
-  readonly _maxElementAlignment = 4;
-  readonly _size = 12;
+export class Point2D implements Struct {
+  readonly _maxElementAlignment = 8;
+  readonly _size = 16;
   constructor(
     readonly $session: VossSession,
-    private __value: number,
-    private __v: boolean,
-    private __data: Test2,
+    private __x: number,
+    private __y: number,
   ) {}
 
-  get value() {
-    return this.__value;
+  get x() {
+    return this.__x;
   }
 
-  get v() {
-    return this.__v;
-  }
-
-  get data() {
-    return this.__data;
+  get y() {
+    return this.__y;
   }
 
   _serialize(builder: Builder) {
-    builder.i32(0, this.__value);
-    builder.bool(4, this.__v);
-    builder.struct(8, this.__data);
+    builder.f64(0, this.__x);
+    builder.f64(8, this.__y);
   }
 
   static deserialize(session: VossSession, reader: Reader) {
-    return new Test(
+    return new Point2D(
       session,
-      reader.i32(0),
-      reader.bool(4),
-      reader.struct(8, Test2.deserialize),
+      reader.f64(0),
+      reader.f64(8),
     );
   }
 }
@@ -119,6 +128,21 @@ export class _ReplyData implements Struct {
   }
 }
 
+export enum Point$Type {
+  Point2D = 0,
+  Point3D = 1,
+}
+
+export type Point =
+  | EnumCase<Point$Type.Point2D, Point2D>
+  | EnumCase<Point$Type.Point3D, Point3D>
+  ;
+
+export const Point$DeserializerMap: Record<Point$Type, DeserializeFn<any>> = {
+  [Point$Type.Point2D]: Point2D.deserialize,
+  [Point$Type.Point3D]: Point3D.deserialize,
+}
+
 export enum _RPCMessage$Type {
   Clock = 0,
   Reply = 1,
@@ -133,3 +157,12 @@ export const _RPCMessage$DeserializerMap: Record<_RPCMessage$Type, DeserializeFn
   [_RPCMessage$Type.Clock]: _ClockData.deserialize,
   [_RPCMessage$Type.Reply]: _ReplyData.deserialize,
 }
+
+class VossSession {}
+
+const session = new VossSession();
+const point2d = new Point2D(session, 15.5, 19.2);
+const buffer = IBuilder.SerializeStruct(point2d);
+const decoded = IReader.DeserializeStruct(session, buffer.buffer, Point2D.deserialize);
+console.log('x', decoded.x);
+console.log('y', decoded.y);

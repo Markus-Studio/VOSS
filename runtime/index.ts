@@ -1,3 +1,4 @@
 export * from './types';
-export { IBuilder } from './builder';
 export { IChangeNotifier } from './changeNotifier';
+export { IBuilder } from './builder';
+export { IReader } from './reader';

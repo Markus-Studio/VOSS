@@ -1,9 +1,15 @@
-struct Test {
-  value: i32;
-  v: bool;
-  data: Test2;
+struct Point2D {
+  x: f64;
+  y: f64;
 }
 
-struct Test2 {
-  t: u32;
+struct Point3D {
+  x: f64;
+  y: f64;
+  z: f64;
+}
+
+oneof Point {
+  Point2D,
+  Point3D
 }
