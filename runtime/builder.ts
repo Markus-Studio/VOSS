@@ -134,7 +134,7 @@ export class IBuilder implements Builder {
     this.view.setUint32(offset, size, true);
     this.view.setUint32(offset + 4, relative, true);
 
-    for (let i = 0, j = stringOffset; i < value.length; ++i, ++j) {
+    for (let i = 0, j = stringOffset; i < value.length; ++i, j += 2) {
       this.view.setUint16(j, value.charCodeAt(i), true);
     }
   }

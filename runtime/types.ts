@@ -38,9 +38,14 @@ export interface Builder {
   string(offset: number, value: string): void;
 }
 
+export type DeserializeFn<T> = (session: any, reader: Reader) => T;
+
 export interface Reader {
-  struct<T>(offset: number, deserializer: (session: any, reader: Reader) => T): T;
-  enum<T>(offset: number, map: Record<number, (session: any, reader: Reader) => T>): T;
+  struct<T extends Struct>(offset: number, deserializer: DeserializeFn<T>): T;
+  enum<T extends Struct>(
+    offset: number,
+    map: Record<number, DeserializeFn<T>>
+  ): EnumCase<number, T>;
   uuid(offset: number): string;
   u8(offset: number): number;
   u16(offset: number): number;

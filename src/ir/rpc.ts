@@ -70,7 +70,7 @@ function buildClockMessage(program: Program): IREnumCase {
 }
 
 function buildReplyMessage(program: Program): IREnumCase {
-  const messageID = u32FromBytesVecLE([RPCMessageCategory.Clock, 0, 0, 0]);
+  const messageID = u32FromBytesVecLE([RPCMessageCategory.Reply, 0, 0, 0]);
   const messageData = new IRObject(
     false,
     InternalStructID.ClockData,
