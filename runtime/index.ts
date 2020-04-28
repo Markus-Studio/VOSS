@@ -1,3 +1,3 @@
 export * from './types';
-export { Builder } from './builder';
+export { IBuilder } from './builder';
 export { IChangeNotifier } from './changeNotifier';

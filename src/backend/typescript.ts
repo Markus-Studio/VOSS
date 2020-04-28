@@ -1,6 +1,6 @@
 import { PrettyWriter } from './writer';
 import { Program } from '../ir/program';
-import { IRObject } from '../ir/object';
+import { IRObject, IRObjectField } from '../ir/object';
 import { toCamelCase, toPascalCase } from '../utils';
 import { IRType, PrimitiveTypeName } from '../ir/type';
 
@@ -71,42 +71,8 @@ function generateObjectClass(writer: PrettyWriter, object: IRObject): void {
     }
   }
 
-  // <-- Generate the Serialize method.
-  writer.write('_serialize(builder: Builder) {\n');
-  for (const field of object.getFields()) {
-    const name = 'this.__' + toCamelCase(field.name);
-    const offset = field.getOffset();
-    const writeFn: string = field.type.isRootObject
-      ? 'uuid'
-      : field.type.isObject
-      ? 'struct'
-      : field.type.isEnum
-      ? 'enum'
-      : field.type.asPrimitiveName();
-    writer.write(`builder.${writeFn}(${offset}, ${name});\n`);
-  }
-  writer.write('}\n');
-  // Generate the Serialize method. -->
-
-  // <-- Generate the Deserialize static method.
-  writer.write('static deserialize(session: VossSession, reader: Reader) {\n');
-  writer.write(`return new ${object.name}(\n`);
-  writer.indent();
-  writer.write('session,\n');
-  for (const field of object.getFields()) {
-    const offset = field.getOffset();
-    const readFn: string = field.type.isRootObject
-      ? 'uuid'
-      : field.type.isObject
-      ? 'struct'
-      : field.type.isEnum
-      ? 'enum'
-      : field.type.asPrimitiveName();
-    writer.write(`reader.${readFn}(${offset}),\n`);
-  }
-  writer.dedent();
-  writer.write(');\n}\n');
-  // Generate the Deserialize static method. -->
+  generateSerializeMethod(writer, object);
+  generateDeserializeMethod(writer, object);
 
   writer.write('}\n');
 }
@@ -129,4 +95,56 @@ function getObjectFieldPrivateType(type: IRType): string {
   }
 
   throw new Error('Not implemented.');
+}
+
+function generateSerializeMethod(
+  writer: PrettyWriter,
+  object: IRObject
+): void {
+  writer.write('_serialize(builder: Builder) {\n');
+  for (const field of object.getFields()) {
+    const name = 'this.__' + toCamelCase(field.name);
+    const offset = field.getOffset();
+    const writeFn: string = field.type.isRootObject
+      ? 'uuid'
+      : field.type.isObject
+      ? 'struct'
+      : field.type.isEnum
+      ? 'enum'
+      : field.type.asPrimitiveName();
+    writer.write(`builder.${writeFn}(${offset}, ${name});\n`);
+  }
+  writer.write('}\n');
+}
+
+function generateDeserializeMethod(
+  writer: PrettyWriter,
+  object: IRObject
+): void {
+  writer.write('static deserialize(session: VossSession, reader: Reader) {\n');
+  writer.write(`return new ${object.name}(\n`);
+  writer.indent();
+  writer.write('session,\n');
+  for (const field of object.getFields()) {
+    writer.write(getDeserializeField(field) + ',\n');
+  }
+  writer.dedent();
+  writer.write(');\n}\n');
+}
+
+function getDeserializeField(field: IRObjectField): string {
+  const offset = field.getOffset();
+  const readFn: string = field.type.isRootObject
+    ? 'uuid'
+    : field.type.isObject
+    ? 'struct'
+    : field.type.isEnum
+    ? 'enum'
+    : field.type.asPrimitiveName();
+  const deserializeFn = field.type.isStructure
+    ? ', ' + field.type.asObject().name + '.deserialize'
+    : field.type.isEnum
+    ? ', ' + field.type.asEnum().name + '$DeserializeMap'
+    : '';
+  return `reader.${readFn}(${offset}${deserializeFn})`;
 }

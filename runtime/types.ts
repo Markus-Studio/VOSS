@@ -39,6 +39,8 @@ export interface Builder {
 }
 
 export interface Reader {
+  struct<T>(offset: number, deserializer: (session: any, reader: Reader) => T): T;
+  enum<T>(offset: number, map: Record<number, (session: any, reader: Reader) => T>): T;
   uuid(offset: number): string;
   u8(offset: number): number;
   u16(offset: number): number;
@@ -48,6 +50,8 @@ export interface Reader {
   i32(offset: number): number;
   f32(offset: number): number;
   f64(offset: number): number;
+  bool(offset: number): boolean;
+  string(offset: number): string;
 }
 
 export interface Struct {

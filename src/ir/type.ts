@@ -69,7 +69,7 @@ export class IRType {
     // An enum has 2 U32 and there is no padding between two consecutive
     // fields of the same type in an struct, but setting the size to 8 here
     // will force the struct builder to find an offset for the enum that is
-    // dividable by 8 (one big U64) instead of 4 which is the correct offset,
+    // dividable by 8 (one big U64) instead of 4 which is the correct alignment,
     // so here we set the align explicitly to 4.
     return new IRType(irEnum.name, 8, 4, irEnum);
   }
@@ -108,7 +108,7 @@ export class IRType {
     if (this.target && this.target instanceof IREnum) {
       return this.target;
     }
-    throw new Error('Type is not an object.');
+    throw new Error('Type is not an enum.');
   }
 
   get isEnum(): boolean {
