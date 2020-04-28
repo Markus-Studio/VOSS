@@ -116,7 +116,7 @@ export class IBuilder implements Builder {
     this.view.setUint8(offset + this.currentOffset, value ? 1 : 0);
   }
 
-  string(offset: number, value: string): void {
+  str(offset: number, value: string): void {
     offset += this.currentOffset;
 
     if (value.length === 0) {

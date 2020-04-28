@@ -35,7 +35,7 @@ export interface Builder {
   f32(offset: number, value: number): void;
   f64(offset: number, value: number): void;
   bool(offset: number, value: boolean): void;
-  string(offset: number, value: string): void;
+  str(offset: number, value: string): void;
 }
 
 export type DeserializeFn<T> = (session: any, reader: Reader) => T;
@@ -56,7 +56,7 @@ export interface Reader {
   f32(offset: number): number;
   f64(offset: number): number;
   bool(offset: number): boolean;
-  string(offset: number): string;
+  str(offset: number): string;
 }
 
 export interface Struct {

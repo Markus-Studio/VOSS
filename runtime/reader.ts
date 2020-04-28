@@ -15,7 +15,7 @@ export class IReader implements Reader {
     deserializer: DeserializeFn<T>
   ): T {
     const reader = new IReader(session, buffer);
-    return reader.struct(0, deserializer);
+    return deserializer(session, reader);
   }
 
   static DeserializeEnum<T extends Struct>(
@@ -133,7 +133,7 @@ export class IReader implements Reader {
     throw new Error('Invalid boolean.');
   }
 
-  string(offset: number): string {
+  str(offset: number): string {
     this.boundCheck(offset, 8);
 
     offset += this.currentOffset;

@@ -11,6 +11,30 @@ import {
 } from './runtime';
 type UUID = string;
 
+export class Person implements Struct {
+  readonly _maxElementAlignment = 4;
+  readonly _size = 8;
+  constructor(
+    readonly $session: VossSession,
+    private __name: string,
+  ) {}
+
+  get name() {
+    return this.__name;
+  }
+
+  _serialize(builder: Builder) {
+    builder.str(0, this.__name);
+  }
+
+  static deserialize(session: VossSession, reader: Reader) {
+    return new Person(
+      session,
+      reader.str(0),
+    );
+  }
+}
+
 export class Point3D implements Struct {
   readonly _maxElementAlignment = 8;
   readonly _size = 24;
@@ -161,8 +185,9 @@ export const _RPCMessage$DeserializerMap: Record<_RPCMessage$Type, DeserializeFn
 class VossSession {}
 
 const session = new VossSession();
-const point2d = new Point2D(session, 15.5, 19.2);
-const buffer = IBuilder.SerializeStruct(point2d);
-const decoded = IReader.DeserializeStruct(session, buffer.buffer, Point2D.deserialize);
-console.log('x', decoded.x);
-console.log('y', decoded.y);
+const person = new Person(session, 'Hello World')
+const buffer = IBuilder.SerializeStruct(person);
+console.log(buffer);
+
+const decoded = IReader.DeserializeStruct(session, buffer.buffer, Person.deserialize);
+console.log(decoded.name);

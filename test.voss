@@ -13,3 +13,7 @@ oneof Point {
   Point2D,
   Point3D
 }
+
+struct Person {
+  name: str;
+}
