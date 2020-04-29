@@ -36,7 +36,9 @@ export function buildRPC(program: Program): IREnum {
 
     let counter = 0;
     for (const field of object.getFields()) {
-      rpcMessages.addCase(buildSetFieldMessage(program, field, counter++));
+      if (field.name !== 'uuid') {
+        rpcMessages.addCase(buildSetFieldMessage(program, field, counter++));
+      }
     }
 
     counter = 0;

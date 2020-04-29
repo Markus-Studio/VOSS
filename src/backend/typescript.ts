@@ -82,7 +82,9 @@ function generateObjectClass(writer: PrettyWriter, object: IRObject): void {
 
   for (const field of object.getFields()) {
     generateObjectPropertyGetter(writer, field);
-    generateObjectPropertySetter(writer, field);
+    if (field.name !== 'uuid') {
+      generateObjectPropertySetter(writer, field);
+    }
   }
 
   // The patch() function is used internally to update an object and
@@ -103,7 +105,11 @@ function generateObjectClassConstructor(
   object: IRObject
 ): void {
   const dataInterfaceName = toPascalCase(object.name) + '$Data';
-  writer.write(`constructor(private data: ${dataInterfaceName}) {}\n`);
+  writer.write(`constructor(private data: ${dataInterfaceName}) {\n`);
+  if (object.isRoot) {
+    writer.write('super();\n');
+  }
+  writer.write(`}\n`);
 }
 
 function getObjectFieldPrivateType(type: IRType): string {
@@ -163,7 +169,7 @@ function generateObjectPropertySetter(
   writer.write(
     `set${toPascalCase(field.name)}(value: ${newValueType}): ${object.name} {\n`
   );
-  const value = field.type.isRootObject ? `value.uuid` : `value`;
+  const value = field.type.isRootObject ? `value.getUuid()` : `value`;
   writer.write(
     `return new ${object.name}({...this.data, ${toCamelCase(
       field.name

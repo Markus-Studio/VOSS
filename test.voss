@@ -14,6 +14,12 @@ oneof Point {
   Point3D
 }
 
-struct Person {
+object Person {
   name: str;
+}
+
+object Test {
+  value: i32;
+  number: f64;
+  x: i32;
 }
