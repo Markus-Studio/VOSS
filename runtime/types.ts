@@ -6,8 +6,6 @@ export interface EnumCase<
   readonly value: V;
 }
 
-export type LazyReference<T> = Promise<T | undefined>;
-
 export interface ChangeNotifier {
   on(event: 'change', cb: () => void): void;
   off(event: 'change', cb: () => void): void;

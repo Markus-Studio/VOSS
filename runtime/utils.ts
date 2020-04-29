@@ -14,3 +14,19 @@ export function fastSqrtTwo(n: number): number {
   }
   return i - 1;
 }
+
+export interface Resolvable<T> extends Promise<T> {
+  resolve(data: T): void;
+  reject(data: any): void;
+}
+
+export function createResolvable<T>(): Resolvable<T> {
+  let resolve!: (data: T) => void;
+  let reject!: (data: any) => void;
+  const promise = new Promise((resolveCb, rejectCb) => {
+    resolve = resolveCb;
+    reject = rejectCb;
+  });
+  Object.assign(promise, { resolve, reject });
+  return promise as Resolvable<T>;
+}

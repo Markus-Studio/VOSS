@@ -11,6 +11,7 @@ const enum RPCMessageCategory {
   ObjectSet = 4,
   ObjectCreate = 5,
   ObjectDelete = 6,
+  FetchByUUID = 7,
 }
 
 export enum InternalStructID {
@@ -26,6 +27,8 @@ export function buildRPC(program: Program): IREnum {
 
   rpcMessages.addCase(buildClockMessage(program));
   rpcMessages.addCase(buildReplyMessage(program));
+  rpcMessages.addCase(buildDeleteMessage(program));
+  rpcMessages.addCase(buildFetchByUUIDMessage(program));
 
   for (const object of objects) {
     if (!object.isRoot) continue;
@@ -46,7 +49,6 @@ export function buildRPC(program: Program): IREnum {
       rpcMessages.addCase(buildFetchViewMessage(program, view, counter++));
     }
 
-    rpcMessages.addCase(buildDeleteMessage(program, object));
     rpcMessages.addCase(buildCreateMessage(program, object));
   }
 
@@ -179,10 +181,9 @@ function buildFetchViewMessage(
   );
 }
 
-function buildDeleteMessage(program: Program, object: IRObject): IREnumCase {
-  const messageID = createUniqueID(RPCMessageCategory.ObjectDelete, object.id);
-  const objectName = toPascalCase(object.name);
-  const caseName = 'Object' + objectName + 'Delete';
+function buildDeleteMessage(program: Program): IREnumCase {
+  const messageID = createUniqueID(RPCMessageCategory.ObjectDelete, 0);
+  const caseName = 'ObjectDelete';
   const messageData = new IRObject(
     false,
     InternalStructID.FetchRequests,
@@ -195,6 +196,29 @@ function buildDeleteMessage(program: Program, object: IRObject): IREnumCase {
 
   messageData.addField(
     new IRObjectField('timestamp', program.resolveType('f64'))
+  );
+
+  messageData.addField(new IRObjectField('uuid', program.resolveType('uuid')));
+
+  program.addObject(messageData);
+  return new IREnumCase(
+    caseName,
+    program.resolveType(messageData.name),
+    messageID
+  );
+}
+
+function buildFetchByUUIDMessage(program: Program): IREnumCase {
+  const messageID = createUniqueID(RPCMessageCategory.FetchByUUID, 0);
+  const caseName = 'FetchByUUID';
+  const messageData = new IRObject(
+    false,
+    InternalStructID.FetchRequests,
+    `_${caseName}Request`
+  );
+
+  messageData.addField(
+    new IRObjectField('replyId', program.resolveType('u32'))
   );
 
   messageData.addField(new IRObjectField('uuid', program.resolveType('uuid')));
