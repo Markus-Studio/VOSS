@@ -1,25 +1,24 @@
-struct Point2D {
-  x: f64;
-  y: f64;
+struct FieldTypeObjectReference {
+  ref:TypespaceObject;
 }
 
-struct Point3D {
-  x: f64;
-  y: f64;
-  z: f64;
+struct FieldTypePrimitive {
+  provider:str;
 }
 
-oneof Point {
-  Point2D,
-  Point3D
+oneof FieldType {
+  FieldTypeObjectReference,
+  FieldTypePrimitive
 }
 
-object Person {
-  name: str;
+object TypespaceObject {
+  title:str;
+  x:i32;
+  y:i32;
 }
 
-object Test {
-  value: i32;
-  number: f64;
-  x: i32;
+object TypespaceObjectField {
+  title:str;
+  owner:TypespaceObject;
+  type:FieldType;
 }

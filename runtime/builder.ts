@@ -1,5 +1,5 @@
 import { Builder, Struct, EnumCase } from './types';
-import { nextNumberDividableByPowOfTwo, fastSqrtTwo } from './utils';
+import { nextNumberDividableByPowOfTwo, fastPow2Log2 } from './utils';
 
 export class IBuilder implements Builder {
   private uint8array = new Uint8Array(256);
@@ -51,7 +51,7 @@ export class IBuilder implements Builder {
 
     const structOffset =
       align > 1
-        ? nextNumberDividableByPowOfTwo(this.nextOffset, fastSqrtTwo(align))
+        ? nextNumberDividableByPowOfTwo(this.nextOffset, fastPow2Log2(align))
         : this.nextOffset;
 
     const relative = structOffset - pointerOffset;

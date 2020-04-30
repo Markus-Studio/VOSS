@@ -14,18 +14,48 @@ import {
 } from './runtime';
 type UUID = string;
 
-export interface Test$Data {
-  uuid: UUID,
-  value: number,
-  number: number,
-  x: number,
+export interface FieldTypePrimitive$Data {
+  provider: string,
 }
 
-export class Test extends IChangeNotifier implements Struct, ChangeNotifier {
-  readonly maxElementAlignment = 8;
-  readonly size = 36;
+export class FieldTypePrimitive implements Struct {
+  readonly maxElementAlignment = 4;
+  readonly size = 8;
 
-  constructor(private data: Test$Data) {
+  constructor(private data: FieldTypePrimitive$Data) {
+  }
+
+  getProvider() {
+    return this.data.provider;
+  }
+
+  setProvider(value: string): FieldTypePrimitive {
+    return new FieldTypePrimitive({...this.data, provider: value});
+  }
+
+  serialize(builder: Builder) {
+    builder.str(0, this.data.provider);
+  }
+
+  static deserialize(reader: Reader) {
+    return new FieldTypePrimitive({
+        provider: reader.str(0),
+    });
+  }
+}
+
+export interface TypespaceObject$Data {
+  uuid: UUID,
+  title: string,
+  x: number,
+  y: number,
+}
+
+export class TypespaceObject extends IChangeNotifier implements Struct, ChangeNotifier {
+  readonly maxElementAlignment = 4;
+  readonly size = 32;
+
+  constructor(private data: TypespaceObject$Data) {
     super();
   }
 
@@ -33,37 +63,19 @@ export class Test extends IChangeNotifier implements Struct, ChangeNotifier {
     return this.data.uuid;
   }
 
-  getValue() {
-    return this.data.value;
+  getTitle() {
+    return this.data.title;
   }
 
-  setValue(session: VossSession, value: number): Promise<void> {
-    this.data.value = value;
+  setTitle(session: VossSession, value: string): Promise<void> {
+    this.data.title = value;
     this.emitChange();
     return session.sendRequest((replyId, timestamp) => ({
-      type: _RPCMessage$Type.ObjectTestSetValue,
-      value: new _ObjectTestSetValueRequest({
+      type: _RPCMessage$Type.ObjectTypespaceObjectSetTitle,
+      value: new _ObjectTypespaceObjectSetTitleRequest({
         replyId,
         timestamp,
-        previousValue: this.data.value,
-        newValue: value,
-      })
-    }));
-  }
-
-  getNumber() {
-    return this.data.number;
-  }
-
-  setNumber(session: VossSession, value: number): Promise<void> {
-    this.data.number = value;
-    this.emitChange();
-    return session.sendRequest((replyId, timestamp) => ({
-      type: _RPCMessage$Type.ObjectTestSetNumber,
-      value: new _ObjectTestSetNumberRequest({
-        replyId,
-        timestamp,
-        previousValue: this.data.number,
+        previousValue: this.data.title,
         newValue: value,
       })
     }));
@@ -77,8 +89,8 @@ export class Test extends IChangeNotifier implements Struct, ChangeNotifier {
     this.data.x = value;
     this.emitChange();
     return session.sendRequest((replyId, timestamp) => ({
-      type: _RPCMessage$Type.ObjectTestSetX,
-      value: new _ObjectTestSetXRequest({
+      type: _RPCMessage$Type.ObjectTypespaceObjectSetX,
+      value: new _ObjectTypespaceObjectSetXRequest({
         replyId,
         timestamp,
         previousValue: this.data.x,
@@ -87,38 +99,88 @@ export class Test extends IChangeNotifier implements Struct, ChangeNotifier {
     }));
   }
 
-  updateInternal(patch: Partial<Test$Data>): void {
+  getY() {
+    return this.data.y;
+  }
+
+  setY(session: VossSession, value: number): Promise<void> {
+    this.data.y = value;
+    this.emitChange();
+    return session.sendRequest((replyId, timestamp) => ({
+      type: _RPCMessage$Type.ObjectTypespaceObjectSetY,
+      value: new _ObjectTypespaceObjectSetYRequest({
+        replyId,
+        timestamp,
+        previousValue: this.data.y,
+        newValue: value,
+      })
+    }));
+  }
+
+  updateInternal(patch: Partial<TypespaceObject$Data>): void {
     this.data = {...this.data, ...patch};
     this.emitChange();
   }
 
   serialize(builder: Builder) {
     builder.uuid(0, this.data.uuid);
-    builder.i32(16, this.data.value);
-    builder.f64(24, this.data.number);
-    builder.i32(32, this.data.x);
+    builder.str(16, this.data.title);
+    builder.i32(24, this.data.x);
+    builder.i32(28, this.data.y);
   }
 
   static deserialize(reader: Reader) {
-    return new Test({
+    return new TypespaceObject({
         uuid: reader.uuid(0),
-        value: reader.i32(16),
-        number: reader.f64(24),
-        x: reader.i32(32),
+        title: reader.str(16),
+        x: reader.i32(24),
+        y: reader.i32(28),
     });
   }
 }
 
-export interface Person$Data {
-  uuid: UUID,
-  name: string,
+export interface FieldTypeObjectReference$Data {
+  ref: UUID,
 }
 
-export class Person extends IChangeNotifier implements Struct, ChangeNotifier {
-  readonly maxElementAlignment = 4;
-  readonly size = 24;
+export class FieldTypeObjectReference implements Struct {
+  readonly maxElementAlignment = 1;
+  readonly size = 16;
 
-  constructor(private data: Person$Data) {
+  constructor(private data: FieldTypeObjectReference$Data) {
+  }
+
+  fetchRef(session: VossSession): Promise<TypespaceObject | undefined> {
+    return session.fetchObjectByUUID(this.data.ref);
+  }
+
+  setRef(value: TypespaceObject): FieldTypeObjectReference {
+    return new FieldTypeObjectReference({...this.data, ref: value.getUuid()});
+  }
+
+  serialize(builder: Builder) {
+    builder.uuid(0, this.data.ref);
+  }
+
+  static deserialize(reader: Reader) {
+    return new FieldTypeObjectReference({
+        ref: reader.uuid(0),
+    });
+  }
+}
+
+export interface TypespaceObjectField$Data {
+  uuid: UUID,
+  title: string,
+  owner: UUID,
+  type: FieldType,
+}
+
+export class TypespaceObjectField extends IChangeNotifier implements Struct, ChangeNotifier {
+  readonly maxElementAlignment = 4;
+  readonly size = 48;
+
+  constructor(private data: TypespaceObjectField$Data) {
     super();
   }
 
@@ -126,131 +188,78 @@ export class Person extends IChangeNotifier implements Struct, ChangeNotifier {
     return this.data.uuid;
   }
 
-  getName() {
-    return this.data.name;
+  getTitle() {
+    return this.data.title;
   }
 
-  setName(session: VossSession, value: string): Promise<void> {
-    this.data.name = value;
+  setTitle(session: VossSession, value: string): Promise<void> {
+    this.data.title = value;
     this.emitChange();
     return session.sendRequest((replyId, timestamp) => ({
-      type: _RPCMessage$Type.ObjectPersonSetName,
-      value: new _ObjectPersonSetNameRequest({
+      type: _RPCMessage$Type.ObjectTypespaceObjectFieldSetTitle,
+      value: new _ObjectTypespaceObjectFieldSetTitleRequest({
         replyId,
         timestamp,
-        previousValue: this.data.name,
+        previousValue: this.data.title,
         newValue: value,
       })
     }));
   }
 
-  updateInternal(patch: Partial<Person$Data>): void {
+  fetchOwner(session: VossSession): Promise<TypespaceObject | undefined> {
+    return session.fetchObjectByUUID(this.data.owner);
+  }
+
+  setOwner(session: VossSession, value: TypespaceObject): Promise<void> {
+    this.data.owner = value.getUuid();
+    this.emitChange();
+    return session.sendRequest((replyId, timestamp) => ({
+      type: _RPCMessage$Type.ObjectTypespaceObjectFieldSetOwner,
+      value: new _ObjectTypespaceObjectFieldSetOwnerRequest({
+        replyId,
+        timestamp,
+        previousValue: this.data.owner,
+        newValue: value.getUuid(),
+      })
+    }));
+  }
+
+  getType() {
+    return this.data.type;
+  }
+
+  setType(session: VossSession, value: FieldType): Promise<void> {
+    this.data.type = value;
+    this.emitChange();
+    return session.sendRequest((replyId, timestamp) => ({
+      type: _RPCMessage$Type.ObjectTypespaceObjectFieldSetType,
+      value: new _ObjectTypespaceObjectFieldSetTypeRequest({
+        replyId,
+        timestamp,
+        previousValue: this.data.type,
+        newValue: value,
+      })
+    }));
+  }
+
+  updateInternal(patch: Partial<TypespaceObjectField$Data>): void {
     this.data = {...this.data, ...patch};
     this.emitChange();
   }
 
   serialize(builder: Builder) {
     builder.uuid(0, this.data.uuid);
-    builder.str(16, this.data.name);
+    builder.str(16, this.data.title);
+    builder.uuid(24, this.data.owner);
+    builder.enum(40, this.data.type);
   }
 
   static deserialize(reader: Reader) {
-    return new Person({
+    return new TypespaceObjectField({
         uuid: reader.uuid(0),
-        name: reader.str(16),
-    });
-  }
-}
-
-export interface Point3D$Data {
-  x: number,
-  y: number,
-  z: number,
-}
-
-export class Point3D implements Struct {
-  readonly maxElementAlignment = 8;
-  readonly size = 24;
-
-  constructor(private data: Point3D$Data) {
-  }
-
-  getX() {
-    return this.data.x;
-  }
-
-  setX(value: number): Point3D {
-    return new Point3D({...this.data, x: value});
-  }
-
-  getY() {
-    return this.data.y;
-  }
-
-  setY(value: number): Point3D {
-    return new Point3D({...this.data, y: value});
-  }
-
-  getZ() {
-    return this.data.z;
-  }
-
-  setZ(value: number): Point3D {
-    return new Point3D({...this.data, z: value});
-  }
-
-  serialize(builder: Builder) {
-    builder.f64(0, this.data.x);
-    builder.f64(8, this.data.y);
-    builder.f64(16, this.data.z);
-  }
-
-  static deserialize(reader: Reader) {
-    return new Point3D({
-        x: reader.f64(0),
-        y: reader.f64(8),
-        z: reader.f64(16),
-    });
-  }
-}
-
-export interface Point2D$Data {
-  x: number,
-  y: number,
-}
-
-export class Point2D implements Struct {
-  readonly maxElementAlignment = 8;
-  readonly size = 16;
-
-  constructor(private data: Point2D$Data) {
-  }
-
-  getX() {
-    return this.data.x;
-  }
-
-  setX(value: number): Point2D {
-    return new Point2D({...this.data, x: value});
-  }
-
-  getY() {
-    return this.data.y;
-  }
-
-  setY(value: number): Point2D {
-    return new Point2D({...this.data, y: value});
-  }
-
-  serialize(builder: Builder) {
-    builder.f64(0, this.data.x);
-    builder.f64(8, this.data.y);
-  }
-
-  static deserialize(reader: Reader) {
-    return new Point2D({
-        x: reader.f64(0),
-        y: reader.f64(8),
+        title: reader.str(16),
+        owner: reader.uuid(24),
+        type: reader.enum(40, FieldType$DeserializerMap),
     });
   }
 }
@@ -371,8 +380,13 @@ export interface _FetchByUUIDRequest$Data {
 export class _FetchByUUIDRequest implements Struct {
   readonly maxElementAlignment = 4;
   readonly size = 20;
+  private pending = 0;
 
   constructor(private data: _FetchByUUIDRequest$Data) {
+  }
+
+  get isDirty() {
+    return this.pending > 0;
   }
 
   getReplyId() {
@@ -400,23 +414,23 @@ export class _FetchByUUIDRequest implements Struct {
   }
 }
 
-export interface _RootFetchTestRequest$Data {
+export interface _RootFetchTypespaceObjectRequest$Data {
   replyId: number,
 }
 
-export class _RootFetchTestRequest implements Struct {
+export class _RootFetchTypespaceObjectRequest implements Struct {
   readonly maxElementAlignment = 4;
   readonly size = 4;
 
-  constructor(private data: _RootFetchTestRequest$Data) {
+  constructor(private data: _RootFetchTypespaceObjectRequest$Data) {
   }
 
   getReplyId() {
     return this.data.replyId;
   }
 
-  setReplyId(value: number): _RootFetchTestRequest {
-    return new _RootFetchTestRequest({...this.data, replyId: value});
+  setReplyId(value: number): _RootFetchTypespaceObjectRequest {
+    return new _RootFetchTypespaceObjectRequest({...this.data, replyId: value});
   }
 
   serialize(builder: Builder) {
@@ -424,327 +438,56 @@ export class _RootFetchTestRequest implements Struct {
   }
 
   static deserialize(reader: Reader) {
-    return new _RootFetchTestRequest({
+    return new _RootFetchTypespaceObjectRequest({
         replyId: reader.u32(0),
     });
   }
 }
 
-export interface _ObjectTestSetValueRequest$Data {
-  replyId: number,
-  timestamp: number,
-  previousValue: number,
-  newValue: number,
-}
-
-export class _ObjectTestSetValueRequest implements Struct {
-  readonly maxElementAlignment = 8;
-  readonly size = 24;
-
-  constructor(private data: _ObjectTestSetValueRequest$Data) {
-  }
-
-  getReplyId() {
-    return this.data.replyId;
-  }
-
-  setReplyId(value: number): _ObjectTestSetValueRequest {
-    return new _ObjectTestSetValueRequest({...this.data, replyId: value});
-  }
-
-  getTimestamp() {
-    return this.data.timestamp;
-  }
-
-  setTimestamp(value: number): _ObjectTestSetValueRequest {
-    return new _ObjectTestSetValueRequest({...this.data, timestamp: value});
-  }
-
-  getPreviousValue() {
-    return this.data.previousValue;
-  }
-
-  setPreviousValue(value: number): _ObjectTestSetValueRequest {
-    return new _ObjectTestSetValueRequest({...this.data, previousValue: value});
-  }
-
-  getNewValue() {
-    return this.data.newValue;
-  }
-
-  setNewValue(value: number): _ObjectTestSetValueRequest {
-    return new _ObjectTestSetValueRequest({...this.data, newValue: value});
-  }
-
-  serialize(builder: Builder) {
-    builder.u32(0, this.data.replyId);
-    builder.f64(8, this.data.timestamp);
-    builder.i32(16, this.data.previousValue);
-    builder.i32(20, this.data.newValue);
-  }
-
-  static deserialize(reader: Reader) {
-    return new _ObjectTestSetValueRequest({
-        replyId: reader.u32(0),
-        timestamp: reader.f64(8),
-        previousValue: reader.i32(16),
-        newValue: reader.i32(20),
-    });
-  }
-}
-
-export interface _ObjectTestSetNumberRequest$Data {
-  replyId: number,
-  timestamp: number,
-  previousValue: number,
-  newValue: number,
-}
-
-export class _ObjectTestSetNumberRequest implements Struct {
-  readonly maxElementAlignment = 8;
-  readonly size = 32;
-
-  constructor(private data: _ObjectTestSetNumberRequest$Data) {
-  }
-
-  getReplyId() {
-    return this.data.replyId;
-  }
-
-  setReplyId(value: number): _ObjectTestSetNumberRequest {
-    return new _ObjectTestSetNumberRequest({...this.data, replyId: value});
-  }
-
-  getTimestamp() {
-    return this.data.timestamp;
-  }
-
-  setTimestamp(value: number): _ObjectTestSetNumberRequest {
-    return new _ObjectTestSetNumberRequest({...this.data, timestamp: value});
-  }
-
-  getPreviousValue() {
-    return this.data.previousValue;
-  }
-
-  setPreviousValue(value: number): _ObjectTestSetNumberRequest {
-    return new _ObjectTestSetNumberRequest({...this.data, previousValue: value});
-  }
-
-  getNewValue() {
-    return this.data.newValue;
-  }
-
-  setNewValue(value: number): _ObjectTestSetNumberRequest {
-    return new _ObjectTestSetNumberRequest({...this.data, newValue: value});
-  }
-
-  serialize(builder: Builder) {
-    builder.u32(0, this.data.replyId);
-    builder.f64(8, this.data.timestamp);
-    builder.f64(16, this.data.previousValue);
-    builder.f64(24, this.data.newValue);
-  }
-
-  static deserialize(reader: Reader) {
-    return new _ObjectTestSetNumberRequest({
-        replyId: reader.u32(0),
-        timestamp: reader.f64(8),
-        previousValue: reader.f64(16),
-        newValue: reader.f64(24),
-    });
-  }
-}
-
-export interface _ObjectTestSetXRequest$Data {
-  replyId: number,
-  timestamp: number,
-  previousValue: number,
-  newValue: number,
-}
-
-export class _ObjectTestSetXRequest implements Struct {
-  readonly maxElementAlignment = 8;
-  readonly size = 24;
-
-  constructor(private data: _ObjectTestSetXRequest$Data) {
-  }
-
-  getReplyId() {
-    return this.data.replyId;
-  }
-
-  setReplyId(value: number): _ObjectTestSetXRequest {
-    return new _ObjectTestSetXRequest({...this.data, replyId: value});
-  }
-
-  getTimestamp() {
-    return this.data.timestamp;
-  }
-
-  setTimestamp(value: number): _ObjectTestSetXRequest {
-    return new _ObjectTestSetXRequest({...this.data, timestamp: value});
-  }
-
-  getPreviousValue() {
-    return this.data.previousValue;
-  }
-
-  setPreviousValue(value: number): _ObjectTestSetXRequest {
-    return new _ObjectTestSetXRequest({...this.data, previousValue: value});
-  }
-
-  getNewValue() {
-    return this.data.newValue;
-  }
-
-  setNewValue(value: number): _ObjectTestSetXRequest {
-    return new _ObjectTestSetXRequest({...this.data, newValue: value});
-  }
-
-  serialize(builder: Builder) {
-    builder.u32(0, this.data.replyId);
-    builder.f64(8, this.data.timestamp);
-    builder.i32(16, this.data.previousValue);
-    builder.i32(20, this.data.newValue);
-  }
-
-  static deserialize(reader: Reader) {
-    return new _ObjectTestSetXRequest({
-        replyId: reader.u32(0),
-        timestamp: reader.f64(8),
-        previousValue: reader.i32(16),
-        newValue: reader.i32(20),
-    });
-  }
-}
-
-export interface _ObjectTestCreateRequest$Data {
-  replyId: number,
-  timestamp: number,
-  data: UUID,
-}
-
-export class _ObjectTestCreateRequest implements Struct {
-  readonly maxElementAlignment = 8;
-  readonly size = 32;
-
-  constructor(private data: _ObjectTestCreateRequest$Data) {
-  }
-
-  getReplyId() {
-    return this.data.replyId;
-  }
-
-  setReplyId(value: number): _ObjectTestCreateRequest {
-    return new _ObjectTestCreateRequest({...this.data, replyId: value});
-  }
-
-  getTimestamp() {
-    return this.data.timestamp;
-  }
-
-  setTimestamp(value: number): _ObjectTestCreateRequest {
-    return new _ObjectTestCreateRequest({...this.data, timestamp: value});
-  }
-
-  fetchData(session: VossSession): Promise<Test | undefined> {
-    return session.fetchObjectByUUID(this.data.data);
-  }
-
-  setData(value: Test): _ObjectTestCreateRequest {
-    return new _ObjectTestCreateRequest({...this.data, data: value.getUuid()});
-  }
-
-  serialize(builder: Builder) {
-    builder.u32(0, this.data.replyId);
-    builder.f64(8, this.data.timestamp);
-    builder.uuid(16, this.data.data);
-  }
-
-  static deserialize(reader: Reader) {
-    return new _ObjectTestCreateRequest({
-        replyId: reader.u32(0),
-        timestamp: reader.f64(8),
-        data: reader.uuid(16),
-    });
-  }
-}
-
-export interface _RootFetchPersonRequest$Data {
-  replyId: number,
-}
-
-export class _RootFetchPersonRequest implements Struct {
-  readonly maxElementAlignment = 4;
-  readonly size = 4;
-
-  constructor(private data: _RootFetchPersonRequest$Data) {
-  }
-
-  getReplyId() {
-    return this.data.replyId;
-  }
-
-  setReplyId(value: number): _RootFetchPersonRequest {
-    return new _RootFetchPersonRequest({...this.data, replyId: value});
-  }
-
-  serialize(builder: Builder) {
-    builder.u32(0, this.data.replyId);
-  }
-
-  static deserialize(reader: Reader) {
-    return new _RootFetchPersonRequest({
-        replyId: reader.u32(0),
-    });
-  }
-}
-
-export interface _ObjectPersonSetNameRequest$Data {
+export interface _ObjectTypespaceObjectSetTitleRequest$Data {
   replyId: number,
   timestamp: number,
   previousValue: string,
   newValue: string,
 }
 
-export class _ObjectPersonSetNameRequest implements Struct {
+export class _ObjectTypespaceObjectSetTitleRequest implements Struct {
   readonly maxElementAlignment = 8;
   readonly size = 32;
 
-  constructor(private data: _ObjectPersonSetNameRequest$Data) {
+  constructor(private data: _ObjectTypespaceObjectSetTitleRequest$Data) {
   }
 
   getReplyId() {
     return this.data.replyId;
   }
 
-  setReplyId(value: number): _ObjectPersonSetNameRequest {
-    return new _ObjectPersonSetNameRequest({...this.data, replyId: value});
+  setReplyId(value: number): _ObjectTypespaceObjectSetTitleRequest {
+    return new _ObjectTypespaceObjectSetTitleRequest({...this.data, replyId: value});
   }
 
   getTimestamp() {
     return this.data.timestamp;
   }
 
-  setTimestamp(value: number): _ObjectPersonSetNameRequest {
-    return new _ObjectPersonSetNameRequest({...this.data, timestamp: value});
+  setTimestamp(value: number): _ObjectTypespaceObjectSetTitleRequest {
+    return new _ObjectTypespaceObjectSetTitleRequest({...this.data, timestamp: value});
   }
 
   getPreviousValue() {
     return this.data.previousValue;
   }
 
-  setPreviousValue(value: string): _ObjectPersonSetNameRequest {
-    return new _ObjectPersonSetNameRequest({...this.data, previousValue: value});
+  setPreviousValue(value: string): _ObjectTypespaceObjectSetTitleRequest {
+    return new _ObjectTypespaceObjectSetTitleRequest({...this.data, previousValue: value});
   }
 
   getNewValue() {
     return this.data.newValue;
   }
 
-  setNewValue(value: string): _ObjectPersonSetNameRequest {
-    return new _ObjectPersonSetNameRequest({...this.data, newValue: value});
+  setNewValue(value: string): _ObjectTypespaceObjectSetTitleRequest {
+    return new _ObjectTypespaceObjectSetTitleRequest({...this.data, newValue: value});
   }
 
   serialize(builder: Builder) {
@@ -755,7 +498,7 @@ export class _ObjectPersonSetNameRequest implements Struct {
   }
 
   static deserialize(reader: Reader) {
-    return new _ObjectPersonSetNameRequest({
+    return new _ObjectTypespaceObjectSetTitleRequest({
         replyId: reader.u32(0),
         timestamp: reader.f64(8),
         previousValue: reader.str(16),
@@ -764,41 +507,167 @@ export class _ObjectPersonSetNameRequest implements Struct {
   }
 }
 
-export interface _ObjectPersonCreateRequest$Data {
+export interface _ObjectTypespaceObjectSetXRequest$Data {
   replyId: number,
   timestamp: number,
-  data: UUID,
+  previousValue: number,
+  newValue: number,
 }
 
-export class _ObjectPersonCreateRequest implements Struct {
+export class _ObjectTypespaceObjectSetXRequest implements Struct {
   readonly maxElementAlignment = 8;
-  readonly size = 32;
+  readonly size = 24;
 
-  constructor(private data: _ObjectPersonCreateRequest$Data) {
+  constructor(private data: _ObjectTypespaceObjectSetXRequest$Data) {
   }
 
   getReplyId() {
     return this.data.replyId;
   }
 
-  setReplyId(value: number): _ObjectPersonCreateRequest {
-    return new _ObjectPersonCreateRequest({...this.data, replyId: value});
+  setReplyId(value: number): _ObjectTypespaceObjectSetXRequest {
+    return new _ObjectTypespaceObjectSetXRequest({...this.data, replyId: value});
   }
 
   getTimestamp() {
     return this.data.timestamp;
   }
 
-  setTimestamp(value: number): _ObjectPersonCreateRequest {
-    return new _ObjectPersonCreateRequest({...this.data, timestamp: value});
+  setTimestamp(value: number): _ObjectTypespaceObjectSetXRequest {
+    return new _ObjectTypespaceObjectSetXRequest({...this.data, timestamp: value});
   }
 
-  fetchData(session: VossSession): Promise<Person | undefined> {
+  getPreviousValue() {
+    return this.data.previousValue;
+  }
+
+  setPreviousValue(value: number): _ObjectTypespaceObjectSetXRequest {
+    return new _ObjectTypespaceObjectSetXRequest({...this.data, previousValue: value});
+  }
+
+  getNewValue() {
+    return this.data.newValue;
+  }
+
+  setNewValue(value: number): _ObjectTypespaceObjectSetXRequest {
+    return new _ObjectTypespaceObjectSetXRequest({...this.data, newValue: value});
+  }
+
+  serialize(builder: Builder) {
+    builder.u32(0, this.data.replyId);
+    builder.f64(8, this.data.timestamp);
+    builder.i32(16, this.data.previousValue);
+    builder.i32(20, this.data.newValue);
+  }
+
+  static deserialize(reader: Reader) {
+    return new _ObjectTypespaceObjectSetXRequest({
+        replyId: reader.u32(0),
+        timestamp: reader.f64(8),
+        previousValue: reader.i32(16),
+        newValue: reader.i32(20),
+    });
+  }
+}
+
+export interface _ObjectTypespaceObjectSetYRequest$Data {
+  replyId: number,
+  timestamp: number,
+  previousValue: number,
+  newValue: number,
+}
+
+export class _ObjectTypespaceObjectSetYRequest implements Struct {
+  readonly maxElementAlignment = 8;
+  readonly size = 24;
+
+  constructor(private data: _ObjectTypespaceObjectSetYRequest$Data) {
+  }
+
+  getReplyId() {
+    return this.data.replyId;
+  }
+
+  setReplyId(value: number): _ObjectTypespaceObjectSetYRequest {
+    return new _ObjectTypespaceObjectSetYRequest({...this.data, replyId: value});
+  }
+
+  getTimestamp() {
+    return this.data.timestamp;
+  }
+
+  setTimestamp(value: number): _ObjectTypespaceObjectSetYRequest {
+    return new _ObjectTypespaceObjectSetYRequest({...this.data, timestamp: value});
+  }
+
+  getPreviousValue() {
+    return this.data.previousValue;
+  }
+
+  setPreviousValue(value: number): _ObjectTypespaceObjectSetYRequest {
+    return new _ObjectTypespaceObjectSetYRequest({...this.data, previousValue: value});
+  }
+
+  getNewValue() {
+    return this.data.newValue;
+  }
+
+  setNewValue(value: number): _ObjectTypespaceObjectSetYRequest {
+    return new _ObjectTypespaceObjectSetYRequest({...this.data, newValue: value});
+  }
+
+  serialize(builder: Builder) {
+    builder.u32(0, this.data.replyId);
+    builder.f64(8, this.data.timestamp);
+    builder.i32(16, this.data.previousValue);
+    builder.i32(20, this.data.newValue);
+  }
+
+  static deserialize(reader: Reader) {
+    return new _ObjectTypespaceObjectSetYRequest({
+        replyId: reader.u32(0),
+        timestamp: reader.f64(8),
+        previousValue: reader.i32(16),
+        newValue: reader.i32(20),
+    });
+  }
+}
+
+export interface _ObjectTypespaceObjectCreateRequest$Data {
+  replyId: number,
+  timestamp: number,
+  data: UUID,
+}
+
+export class _ObjectTypespaceObjectCreateRequest implements Struct {
+  readonly maxElementAlignment = 8;
+  readonly size = 32;
+
+  constructor(private data: _ObjectTypespaceObjectCreateRequest$Data) {
+  }
+
+  getReplyId() {
+    return this.data.replyId;
+  }
+
+  setReplyId(value: number): _ObjectTypespaceObjectCreateRequest {
+    return new _ObjectTypespaceObjectCreateRequest({...this.data, replyId: value});
+  }
+
+  getTimestamp() {
+    return this.data.timestamp;
+  }
+
+  setTimestamp(value: number): _ObjectTypespaceObjectCreateRequest {
+    return new _ObjectTypespaceObjectCreateRequest({...this.data, timestamp: value});
+  }
+
+  fetchData(session: VossSession): Promise<TypespaceObject | undefined> {
     return session.fetchObjectByUUID(this.data.data);
   }
 
-  setData(value: Person): _ObjectPersonCreateRequest {
-    return new _ObjectPersonCreateRequest({...this.data, data: value.getUuid()});
+  setData(value: TypespaceObject): _ObjectTypespaceObjectCreateRequest {
+    return new _ObjectTypespaceObjectCreateRequest({...this.data, data: value.getUuid()});
   }
 
   serialize(builder: Builder) {
@@ -808,7 +677,7 @@ export class _ObjectPersonCreateRequest implements Struct {
   }
 
   static deserialize(reader: Reader) {
-    return new _ObjectPersonCreateRequest({
+    return new _ObjectTypespaceObjectCreateRequest({
         replyId: reader.u32(0),
         timestamp: reader.f64(8),
         data: reader.uuid(16),
@@ -816,19 +685,290 @@ export class _ObjectPersonCreateRequest implements Struct {
   }
 }
 
-export const enum Point$Type {
-  Point2D = 0,
-  Point3D = 1,
+export interface _RootFetchTypespaceObjectFieldRequest$Data {
+  replyId: number,
 }
 
-export type Point =
-  | EnumCase<Point$Type.Point2D, Point2D>
-  | EnumCase<Point$Type.Point3D, Point3D>
+export class _RootFetchTypespaceObjectFieldRequest implements Struct {
+  readonly maxElementAlignment = 4;
+  readonly size = 4;
+
+  constructor(private data: _RootFetchTypespaceObjectFieldRequest$Data) {
+  }
+
+  getReplyId() {
+    return this.data.replyId;
+  }
+
+  setReplyId(value: number): _RootFetchTypespaceObjectFieldRequest {
+    return new _RootFetchTypespaceObjectFieldRequest({...this.data, replyId: value});
+  }
+
+  serialize(builder: Builder) {
+    builder.u32(0, this.data.replyId);
+  }
+
+  static deserialize(reader: Reader) {
+    return new _RootFetchTypespaceObjectFieldRequest({
+        replyId: reader.u32(0),
+    });
+  }
+}
+
+export interface _ObjectTypespaceObjectFieldSetTitleRequest$Data {
+  replyId: number,
+  timestamp: number,
+  previousValue: string,
+  newValue: string,
+}
+
+export class _ObjectTypespaceObjectFieldSetTitleRequest implements Struct {
+  readonly maxElementAlignment = 8;
+  readonly size = 32;
+
+  constructor(private data: _ObjectTypespaceObjectFieldSetTitleRequest$Data) {
+  }
+
+  getReplyId() {
+    return this.data.replyId;
+  }
+
+  setReplyId(value: number): _ObjectTypespaceObjectFieldSetTitleRequest {
+    return new _ObjectTypespaceObjectFieldSetTitleRequest({...this.data, replyId: value});
+  }
+
+  getTimestamp() {
+    return this.data.timestamp;
+  }
+
+  setTimestamp(value: number): _ObjectTypespaceObjectFieldSetTitleRequest {
+    return new _ObjectTypespaceObjectFieldSetTitleRequest({...this.data, timestamp: value});
+  }
+
+  getPreviousValue() {
+    return this.data.previousValue;
+  }
+
+  setPreviousValue(value: string): _ObjectTypespaceObjectFieldSetTitleRequest {
+    return new _ObjectTypespaceObjectFieldSetTitleRequest({...this.data, previousValue: value});
+  }
+
+  getNewValue() {
+    return this.data.newValue;
+  }
+
+  setNewValue(value: string): _ObjectTypespaceObjectFieldSetTitleRequest {
+    return new _ObjectTypespaceObjectFieldSetTitleRequest({...this.data, newValue: value});
+  }
+
+  serialize(builder: Builder) {
+    builder.u32(0, this.data.replyId);
+    builder.f64(8, this.data.timestamp);
+    builder.str(16, this.data.previousValue);
+    builder.str(24, this.data.newValue);
+  }
+
+  static deserialize(reader: Reader) {
+    return new _ObjectTypespaceObjectFieldSetTitleRequest({
+        replyId: reader.u32(0),
+        timestamp: reader.f64(8),
+        previousValue: reader.str(16),
+        newValue: reader.str(24),
+    });
+  }
+}
+
+export interface _ObjectTypespaceObjectFieldSetOwnerRequest$Data {
+  replyId: number,
+  timestamp: number,
+  previousValue: UUID,
+  newValue: UUID,
+}
+
+export class _ObjectTypespaceObjectFieldSetOwnerRequest implements Struct {
+  readonly maxElementAlignment = 8;
+  readonly size = 48;
+
+  constructor(private data: _ObjectTypespaceObjectFieldSetOwnerRequest$Data) {
+  }
+
+  getReplyId() {
+    return this.data.replyId;
+  }
+
+  setReplyId(value: number): _ObjectTypespaceObjectFieldSetOwnerRequest {
+    return new _ObjectTypespaceObjectFieldSetOwnerRequest({...this.data, replyId: value});
+  }
+
+  getTimestamp() {
+    return this.data.timestamp;
+  }
+
+  setTimestamp(value: number): _ObjectTypespaceObjectFieldSetOwnerRequest {
+    return new _ObjectTypespaceObjectFieldSetOwnerRequest({...this.data, timestamp: value});
+  }
+
+  getPreviousValue() {
+    return this.data.previousValue;
+  }
+
+  setPreviousValue(value: UUID): _ObjectTypespaceObjectFieldSetOwnerRequest {
+    return new _ObjectTypespaceObjectFieldSetOwnerRequest({...this.data, previousValue: value});
+  }
+
+  getNewValue() {
+    return this.data.newValue;
+  }
+
+  setNewValue(value: UUID): _ObjectTypespaceObjectFieldSetOwnerRequest {
+    return new _ObjectTypespaceObjectFieldSetOwnerRequest({...this.data, newValue: value});
+  }
+
+  serialize(builder: Builder) {
+    builder.u32(0, this.data.replyId);
+    builder.f64(8, this.data.timestamp);
+    builder.uuid(16, this.data.previousValue);
+    builder.uuid(32, this.data.newValue);
+  }
+
+  static deserialize(reader: Reader) {
+    return new _ObjectTypespaceObjectFieldSetOwnerRequest({
+        replyId: reader.u32(0),
+        timestamp: reader.f64(8),
+        previousValue: reader.uuid(16),
+        newValue: reader.uuid(32),
+    });
+  }
+}
+
+export interface _ObjectTypespaceObjectFieldSetTypeRequest$Data {
+  replyId: number,
+  timestamp: number,
+  previousValue: FieldType,
+  newValue: FieldType,
+}
+
+export class _ObjectTypespaceObjectFieldSetTypeRequest implements Struct {
+  readonly maxElementAlignment = 8;
+  readonly size = 32;
+
+  constructor(private data: _ObjectTypespaceObjectFieldSetTypeRequest$Data) {
+  }
+
+  getReplyId() {
+    return this.data.replyId;
+  }
+
+  setReplyId(value: number): _ObjectTypespaceObjectFieldSetTypeRequest {
+    return new _ObjectTypespaceObjectFieldSetTypeRequest({...this.data, replyId: value});
+  }
+
+  getTimestamp() {
+    return this.data.timestamp;
+  }
+
+  setTimestamp(value: number): _ObjectTypespaceObjectFieldSetTypeRequest {
+    return new _ObjectTypespaceObjectFieldSetTypeRequest({...this.data, timestamp: value});
+  }
+
+  getPreviousValue() {
+    return this.data.previousValue;
+  }
+
+  setPreviousValue(value: FieldType): _ObjectTypespaceObjectFieldSetTypeRequest {
+    return new _ObjectTypespaceObjectFieldSetTypeRequest({...this.data, previousValue: value});
+  }
+
+  getNewValue() {
+    return this.data.newValue;
+  }
+
+  setNewValue(value: FieldType): _ObjectTypespaceObjectFieldSetTypeRequest {
+    return new _ObjectTypespaceObjectFieldSetTypeRequest({...this.data, newValue: value});
+  }
+
+  serialize(builder: Builder) {
+    builder.u32(0, this.data.replyId);
+    builder.f64(8, this.data.timestamp);
+    builder.enum(16, this.data.previousValue);
+    builder.enum(24, this.data.newValue);
+  }
+
+  static deserialize(reader: Reader) {
+    return new _ObjectTypespaceObjectFieldSetTypeRequest({
+        replyId: reader.u32(0),
+        timestamp: reader.f64(8),
+        previousValue: reader.enum(16, FieldType$DeserializerMap),
+        newValue: reader.enum(24, FieldType$DeserializerMap),
+    });
+  }
+}
+
+export interface _ObjectTypespaceObjectFieldCreateRequest$Data {
+  replyId: number,
+  timestamp: number,
+  data: UUID,
+}
+
+export class _ObjectTypespaceObjectFieldCreateRequest implements Struct {
+  readonly maxElementAlignment = 8;
+  readonly size = 32;
+
+  constructor(private data: _ObjectTypespaceObjectFieldCreateRequest$Data) {
+  }
+
+  getReplyId() {
+    return this.data.replyId;
+  }
+
+  setReplyId(value: number): _ObjectTypespaceObjectFieldCreateRequest {
+    return new _ObjectTypespaceObjectFieldCreateRequest({...this.data, replyId: value});
+  }
+
+  getTimestamp() {
+    return this.data.timestamp;
+  }
+
+  setTimestamp(value: number): _ObjectTypespaceObjectFieldCreateRequest {
+    return new _ObjectTypespaceObjectFieldCreateRequest({...this.data, timestamp: value});
+  }
+
+  fetchData(session: VossSession): Promise<TypespaceObjectField | undefined> {
+    return session.fetchObjectByUUID(this.data.data);
+  }
+
+  setData(value: TypespaceObjectField): _ObjectTypespaceObjectFieldCreateRequest {
+    return new _ObjectTypespaceObjectFieldCreateRequest({...this.data, data: value.getUuid()});
+  }
+
+  serialize(builder: Builder) {
+    builder.u32(0, this.data.replyId);
+    builder.f64(8, this.data.timestamp);
+    builder.uuid(16, this.data.data);
+  }
+
+  static deserialize(reader: Reader) {
+    return new _ObjectTypespaceObjectFieldCreateRequest({
+        replyId: reader.u32(0),
+        timestamp: reader.f64(8),
+        data: reader.uuid(16),
+    });
+  }
+}
+
+export const enum FieldType$Type {
+  FieldTypeObjectReference = 0,
+  FieldTypePrimitive = 1,
+}
+
+export type FieldType =
+  | EnumCase<FieldType$Type.FieldTypeObjectReference, FieldTypeObjectReference>
+  | EnumCase<FieldType$Type.FieldTypePrimitive, FieldTypePrimitive>
   ;
 
-export const Point$DeserializerMap: Record<Point$Type, DeserializeFn<any>> = {
-  [Point$Type.Point2D]: Point2D.deserialize,
-  [Point$Type.Point3D]: Point3D.deserialize,
+export const FieldType$DeserializerMap: Record<FieldType$Type, DeserializeFn<any>> = {
+  [FieldType$Type.FieldTypeObjectReference]: FieldTypeObjectReference.deserialize,
+  [FieldType$Type.FieldTypePrimitive]: FieldTypePrimitive.deserialize,
 }
 
 export const enum _RPCMessage$Type {
@@ -836,14 +976,16 @@ export const enum _RPCMessage$Type {
   Reply = 1,
   ObjectDelete = 6,
   FetchByUUID = 7,
-  RootFetchTest = 8706,
-  ObjectTestSetValue = 8708,
-  ObjectTestSetNumber = 16785924,
-  ObjectTestSetX = 33563140,
-  ObjectTestCreate = 8709,
-  RootFetchPerson = 8450,
-  ObjectPersonSetName = 8452,
-  ObjectPersonCreate = 8453,
+  RootFetchTypespaceObject = 8450,
+  ObjectTypespaceObjectSetTitle = 8452,
+  ObjectTypespaceObjectSetX = 16785668,
+  ObjectTypespaceObjectSetY = 33562884,
+  ObjectTypespaceObjectCreate = 8453,
+  RootFetchTypespaceObjectField = 8706,
+  ObjectTypespaceObjectFieldSetTitle = 8708,
+  ObjectTypespaceObjectFieldSetOwner = 16785924,
+  ObjectTypespaceObjectFieldSetType = 33563140,
+  ObjectTypespaceObjectFieldCreate = 8709,
 }
 
 export type _RPCMessage =
@@ -851,14 +993,16 @@ export type _RPCMessage =
   | EnumCase<_RPCMessage$Type.Reply, _ReplyData>
   | EnumCase<_RPCMessage$Type.ObjectDelete, _ObjectDeleteRequest>
   | EnumCase<_RPCMessage$Type.FetchByUUID, _FetchByUUIDRequest>
-  | EnumCase<_RPCMessage$Type.RootFetchTest, _RootFetchTestRequest>
-  | EnumCase<_RPCMessage$Type.ObjectTestSetValue, _ObjectTestSetValueRequest>
-  | EnumCase<_RPCMessage$Type.ObjectTestSetNumber, _ObjectTestSetNumberRequest>
-  | EnumCase<_RPCMessage$Type.ObjectTestSetX, _ObjectTestSetXRequest>
-  | EnumCase<_RPCMessage$Type.ObjectTestCreate, _ObjectTestCreateRequest>
-  | EnumCase<_RPCMessage$Type.RootFetchPerson, _RootFetchPersonRequest>
-  | EnumCase<_RPCMessage$Type.ObjectPersonSetName, _ObjectPersonSetNameRequest>
-  | EnumCase<_RPCMessage$Type.ObjectPersonCreate, _ObjectPersonCreateRequest>
+  | EnumCase<_RPCMessage$Type.RootFetchTypespaceObject, _RootFetchTypespaceObjectRequest>
+  | EnumCase<_RPCMessage$Type.ObjectTypespaceObjectSetTitle, _ObjectTypespaceObjectSetTitleRequest>
+  | EnumCase<_RPCMessage$Type.ObjectTypespaceObjectSetX, _ObjectTypespaceObjectSetXRequest>
+  | EnumCase<_RPCMessage$Type.ObjectTypespaceObjectSetY, _ObjectTypespaceObjectSetYRequest>
+  | EnumCase<_RPCMessage$Type.ObjectTypespaceObjectCreate, _ObjectTypespaceObjectCreateRequest>
+  | EnumCase<_RPCMessage$Type.RootFetchTypespaceObjectField, _RootFetchTypespaceObjectFieldRequest>
+  | EnumCase<_RPCMessage$Type.ObjectTypespaceObjectFieldSetTitle, _ObjectTypespaceObjectFieldSetTitleRequest>
+  | EnumCase<_RPCMessage$Type.ObjectTypespaceObjectFieldSetOwner, _ObjectTypespaceObjectFieldSetOwnerRequest>
+  | EnumCase<_RPCMessage$Type.ObjectTypespaceObjectFieldSetType, _ObjectTypespaceObjectFieldSetTypeRequest>
+  | EnumCase<_RPCMessage$Type.ObjectTypespaceObjectFieldCreate, _ObjectTypespaceObjectFieldCreateRequest>
   ;
 
 export const _RPCMessage$DeserializerMap: Record<_RPCMessage$Type, DeserializeFn<any>> = {
@@ -866,20 +1010,43 @@ export const _RPCMessage$DeserializerMap: Record<_RPCMessage$Type, DeserializeFn
   [_RPCMessage$Type.Reply]: _ReplyData.deserialize,
   [_RPCMessage$Type.ObjectDelete]: _ObjectDeleteRequest.deserialize,
   [_RPCMessage$Type.FetchByUUID]: _FetchByUUIDRequest.deserialize,
-  [_RPCMessage$Type.RootFetchTest]: _RootFetchTestRequest.deserialize,
-  [_RPCMessage$Type.ObjectTestSetValue]: _ObjectTestSetValueRequest.deserialize,
-  [_RPCMessage$Type.ObjectTestSetNumber]: _ObjectTestSetNumberRequest.deserialize,
-  [_RPCMessage$Type.ObjectTestSetX]: _ObjectTestSetXRequest.deserialize,
-  [_RPCMessage$Type.ObjectTestCreate]: _ObjectTestCreateRequest.deserialize,
-  [_RPCMessage$Type.RootFetchPerson]: _RootFetchPersonRequest.deserialize,
-  [_RPCMessage$Type.ObjectPersonSetName]: _ObjectPersonSetNameRequest.deserialize,
-  [_RPCMessage$Type.ObjectPersonCreate]: _ObjectPersonCreateRequest.deserialize,
+  [_RPCMessage$Type.RootFetchTypespaceObject]: _RootFetchTypespaceObjectRequest.deserialize,
+  [_RPCMessage$Type.ObjectTypespaceObjectSetTitle]: _ObjectTypespaceObjectSetTitleRequest.deserialize,
+  [_RPCMessage$Type.ObjectTypespaceObjectSetX]: _ObjectTypespaceObjectSetXRequest.deserialize,
+  [_RPCMessage$Type.ObjectTypespaceObjectSetY]: _ObjectTypespaceObjectSetYRequest.deserialize,
+  [_RPCMessage$Type.ObjectTypespaceObjectCreate]: _ObjectTypespaceObjectCreateRequest.deserialize,
+  [_RPCMessage$Type.RootFetchTypespaceObjectField]: _RootFetchTypespaceObjectFieldRequest.deserialize,
+  [_RPCMessage$Type.ObjectTypespaceObjectFieldSetTitle]: _ObjectTypespaceObjectFieldSetTitleRequest.deserialize,
+  [_RPCMessage$Type.ObjectTypespaceObjectFieldSetOwner]: _ObjectTypespaceObjectFieldSetOwnerRequest.deserialize,
+  [_RPCMessage$Type.ObjectTypespaceObjectFieldSetType]: _ObjectTypespaceObjectFieldSetTypeRequest.deserialize,
+  [_RPCMessage$Type.ObjectTypespaceObjectFieldCreate]: _ObjectTypespaceObjectFieldCreateRequest.deserialize,
 }
 
 export class VossSession {
   private counter = 0;
   private objects = new Map<string, any>();
   private pendingPromises = new Map<number, Resolvable<void>>();
+  private websocket: WebSocket;
+
+  constructor(server: string) {
+    this.onWSOpen = this.onWSOpen.bind(this);
+    this.onWSMessage = this.onWSMessage.bind(this);
+
+    this.websocket = new WebSocket(server, 'VOSS');
+    this.setupWS();
+  }
+
+  private setupWS() {
+    this.websocket.onopen = this.onWSOpen;
+    this.websocket.onmessage = this.onWSMessage;
+  }
+
+  private onWSOpen() {
+  }
+
+  private onWSMessage(event: MessageEvent) {
+
+  }
 
   now(): number {
     return Date.now();
@@ -894,6 +1061,7 @@ export class VossSession {
     try {
       const request = builder(replyId, timestamp);
       const data = IBuilder.SerializeEnum(request);
+      this.websocket.send(data.buffer);
     } catch (err) {
       promise.reject(err);
     }

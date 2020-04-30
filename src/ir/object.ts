@@ -1,5 +1,5 @@
 import { IRType } from './type';
-import { fastSqrtTwo, nextNumberDividableByPowOfTwo } from '../utils';
+import { fastPow2Log2, nextNumberDividableByPowOfTwo } from '../utils';
 
 export class IRObject {
   private fields = new Map<string, IRObjectField>();
@@ -22,7 +22,7 @@ export class IRObject {
   private getNextOffset(size: number, align: number = size): number {
     let offset = this.nextOffsetStart;
     if (align > 1) {
-      const pow = fastSqrtTwo(align);
+      const pow = fastPow2Log2(align);
       offset = nextNumberDividableByPowOfTwo(offset, pow);
     }
     this.nextOffsetStart = offset + size;

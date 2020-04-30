@@ -184,7 +184,7 @@ set${fieldName}(session: VossSession, value: ${valueType}): Promise<void> {
       value: new ${req}({
         replyId,
         timestamp,
-        previousValue: this.data.${toCamelCase(field.name)}${valueGetter},
+        previousValue: this.data.${toCamelCase(field.name)},
         newValue: value${valueGetter},
       })
   }));

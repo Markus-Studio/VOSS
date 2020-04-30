@@ -33,9 +33,8 @@ export function buildRPC(program: Program): IREnum {
   for (const object of objects) {
     if (!object.isRoot) continue;
 
-    if (!object.isViewed()) {
-      rpcMessages.addCase(buildRootFetchMessage(program, object));
-    }
+    rpcMessages.addCase(buildCreateMessage(program, object));
+    rpcMessages.addCase(buildRootFetchMessage(program, object));
 
     let counter = 0;
     for (const field of object.getFields()) {
@@ -48,8 +47,6 @@ export function buildRPC(program: Program): IREnum {
     for (const view of object.getViews()) {
       rpcMessages.addCase(buildFetchViewMessage(program, view, counter++));
     }
-
-    rpcMessages.addCase(buildCreateMessage(program, object));
   }
 
   return rpcMessages;
