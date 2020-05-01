@@ -1,45 +1,27 @@
-use actix::{Actor, StreamHandler};
-use actix_web::{web, App, Error, HttpRequest, HttpResponse, HttpServer};
-use actix_web_actors::ws;
+mod voss;
+mod voss_runtime;
 
-pub struct MyWs {
+struct Test {
+    value: f64,
 }
 
-impl Actor for MyWs {
-    type Context = ws::WebsocketContext<Self>;
-}
+impl voss_runtime::VossStruct for Test {
+    fn alignment_pow2(&self) -> usize {
+        3
+    }
 
-impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
-    fn handle(
-        &mut self,
-        msg: Result<ws::Message, ws::ProtocolError>,
-        ctx: &mut Self::Context,
-    ) {
-        match msg {
-            Ok(ws::Message::Ping(msg)) => ctx.pong(&msg),
-            Ok(ws::Message::Text(text)) => {
-                println!("text");
-                ctx.text(text);
-            },
-            Ok(ws::Message::Binary(bin)) => {
-                println!("binary {}", bin.len());
-                ctx.binary(bin);
-            }
-            _ => (),
-        }
+    fn size(&self) -> usize {
+        8
+    }
+
+    fn serialize(
+        &self,
+        builder: &mut voss_runtime::VossBuilder,
+    ) -> Result<(), voss_runtime::BuilderError> {
+        builder.f64(0, self.value)?;
+        Ok(())
     }
 }
 
-async fn index(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
-    let resp = ws::start(MyWs {}, &req, stream);
-    println!("{:?}", resp);
-    resp
-}
-
-#[actix_rt::main]
-async fn main() -> std::io::Result<()> {
-    HttpServer::new(|| App::new().route("/ws/", web::get().to(index)))
-        .bind("127.0.0.1:8088")?
-        .run()
-        .await
-}
+// #[actix_rt::main]
+fn main() {}
