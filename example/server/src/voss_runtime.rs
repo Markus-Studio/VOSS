@@ -423,6 +423,45 @@ impl<'a> VossReader<'a> {
             self.data[offset + 15],
         ]))
     }
+
+    pub fn str(&self, mut offset: usize) -> Result<String, ReaderError> {
+        let size = self.u32(offset)? as usize;
+        let relative_offset = self.u32(offset + 4)? as usize;
+
+        if size == 0 {
+            if relative_offset != 0 {
+                return Err(ReaderError::InvalidBuffer);
+            }
+            return Ok("".to_string());
+        }
+
+        if size % 2 == 1 {
+            return Err(ReaderError::InvalidBuffer);
+        }
+
+        let string_offset = offset + relative_offset;
+        self.bound_check(string_offset, size)?;
+
+        let start_index = self.current_offset + string_offset;
+        let end_index = start_index + size;
+        let slice = &self.data[start_index..end_index];
+
+        let len = size / 2;
+        let mut buffer = Vec::<u16>::with_capacity(len);
+        buffer.extend(
+            slice
+                .iter()
+                .step_by(2)
+                .zip(slice.iter().skip(1).step_by(2))
+                .map(|(&a, &b)| u16::from_le_bytes([a, b])),
+        );
+
+        let result = String::from_utf16(&buffer);
+        if result.is_err() {
+            return Err(ReaderError::InvalidBuffer);
+        }
+        return Ok(result.unwrap());
+    }
 }
 
 impl<'a> From<&'a Vec<u8>> for VossReader<'a> {
