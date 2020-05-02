@@ -1,6 +1,9 @@
 use std::error;
 use std::fmt;
 
+#[derive(PartialEq)]
+pub struct UUID([u8; 16]);
+
 #[derive(Debug, Clone)]
 pub enum BuilderError {
     OutOfBound,
@@ -17,6 +20,10 @@ impl error::Error for BuilderError {
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         None
     }
+}
+
+pub trait FromReader: Sized {
+    fn from_reader(reader: &VossReader) -> Result<Self, ReaderError>;
 }
 
 pub trait VossStruct {
@@ -49,14 +56,16 @@ impl VossBuilder {
         }
     }
 
-    pub fn serialize_struct(object: &dyn VossStruct) -> Result<Vec<u8>, BuilderError> {
+    pub fn serialize_struct(object: &impl VossStruct) -> Result<Vec<u8>, BuilderError> {
         let mut builder = VossBuilder::new(object.size());
         object.serialize(&mut builder)?;
         builder.data.shrink_to_fit();
         Ok(builder.data)
     }
 
-    pub fn serialize_enum<'a>(value: &'a (dyn VossEnum<'a> + 'a)) -> Result<Vec<u8>, BuilderError> {
+    pub fn serialize_enum<'a>(
+        value: &'a (impl VossEnum<'a> + 'a),
+    ) -> Result<Vec<u8>, BuilderError> {
         let mut builder = VossBuilder::new(8);
         builder.u32(0, value.get_type())?;
         builder.object(4, value.get_value())?;
@@ -79,12 +88,12 @@ impl VossBuilder {
             return Ok(());
         }
 
-        if next_offset < self.data.capacity() {
-            let additional = next_offset - self.data.capacity();
-            if self.data.try_reserve(additional).is_err() {
-                return Err(BuilderError::Overflow);
-            }
-        }
+        // if next_offset < self.data.capacity() {
+        //     let additional = next_offset - self.data.capacity();
+        //     if self.data.try_reserve(additional).is_err() {
+        //         return Err(BuilderError::Overflow);
+        //     }
+        // }
 
         self.data.resize(next_offset, 0);
         self.next_offset = next_offset;
@@ -170,30 +179,38 @@ impl VossBuilder {
         Ok(())
     }
 
-    pub fn bool(&mut self, mut offset: usize, value: bool) -> Result<(), BuilderError> {
+    pub fn bool(&mut self, offset: usize, value: bool) -> Result<(), BuilderError> {
         self.bound_check(offset, 1)?;
         self.data[self.current_offset + offset] = if value { 0 } else { 1 };
         Ok(())
     }
 
-    pub fn uuid(&mut self, mut offset: usize, value: [u8; 16]) -> Result<(), BuilderError> {
+    pub fn uuid(&mut self, mut offset: usize, value: UUID) -> Result<(), BuilderError> {
         self.bound_check(offset, 16)?;
         offset += self.current_offset;
-        self.data[offset + 0] = value[0];
-        self.data[offset + 1] = value[1];
-        self.data[offset + 2] = value[2];
-        self.data[offset + 3] = value[3];
-        self.data[offset + 4] = value[4];
-        self.data[offset + 5] = value[5];
-        self.data[offset + 6] = value[6];
-        self.data[offset + 7] = value[7];
+        self.data[offset + 0] = value.0[0];
+        self.data[offset + 1] = value.0[1];
+        self.data[offset + 2] = value.0[2];
+        self.data[offset + 3] = value.0[3];
+        self.data[offset + 4] = value.0[4];
+        self.data[offset + 5] = value.0[5];
+        self.data[offset + 6] = value.0[6];
+        self.data[offset + 7] = value.0[7];
+        self.data[offset + 8] = value.0[8];
+        self.data[offset + 9] = value.0[9];
+        self.data[offset + 10] = value.0[10];
+        self.data[offset + 11] = value.0[11];
+        self.data[offset + 12] = value.0[12];
+        self.data[offset + 13] = value.0[13];
+        self.data[offset + 14] = value.0[14];
+        self.data[offset + 15] = value.0[15];
         Ok(())
     }
 
-    pub fn str(&mut self, mut offset: usize, value: String) -> Result<(), BuilderError> {
+    pub fn str(&mut self, offset: usize, value: String) -> Result<(), BuilderError> {
         if value.len() == 0 {
-            self.u32(offset, 0);
-            self.u32(offset + 4, 0);
+            self.u32(offset, 0)?;
+            self.u32(offset + 4, 0)?;
             return Ok(());
         }
 
@@ -214,9 +231,9 @@ impl VossBuilder {
         }
 
         let size = (count * 2) as u32;
-        self.next_offset = self.next_offset - upper_size + size;
-        self.u32(offset, size);
-        self.u32(offset + 4, relative);
+        self.next_offset = self.next_offset - upper_size + size as usize;
+        self.u32(offset, size)?;
+        self.u32(offset + 4, relative as u32)?;
 
         Ok(())
     }
@@ -258,7 +275,7 @@ impl VossBuilder {
     pub fn oneof<'a>(
         &mut self,
         offset: usize,
-        value: &'a (dyn VossEnum<'a> + 'a),
+        value: &'a (impl VossEnum<'a> + 'a),
     ) -> Result<(), BuilderError> {
         self.u32(offset + self.current_offset, value.get_type())?;
         self.object(offset + 4, value.get_value())?;
@@ -272,5 +289,148 @@ fn next_number_divisible_by_pow2(number: usize, pow: usize) -> usize {
         n
     } else {
         n + (1 << pow)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum ReaderError {
+    InvalidBuffer,
+}
+
+impl fmt::Display for ReaderError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Failed to decode invalid buffer.")
+    }
+}
+
+impl error::Error for ReaderError {
+    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+        None
+    }
+}
+
+pub struct VossReader<'a> {
+    offset_stack: Vec<usize>,
+    current_offset: usize,
+    data: &'a [u8],
+}
+
+impl<'a> VossReader<'a> {
+    #[inline(always)]
+    fn bound_check(&self, offset: usize, size: usize) -> Result<(), ReaderError> {
+        if self.current_offset + offset + size <= self.data.len() {
+            Ok(())
+        } else {
+            Err(ReaderError::InvalidBuffer)
+        }
+    }
+
+    pub fn u8(&self, offset: usize) -> Result<u8, ReaderError> {
+        self.bound_check(offset, 1)?;
+        Ok(self.data[self.current_offset + offset])
+    }
+
+    pub fn u16(&self, mut offset: usize) -> Result<u16, ReaderError> {
+        self.bound_check(offset, 2)?;
+        offset += self.current_offset;
+        Ok(u16::from_le_bytes([
+            self.data[offset + 0],
+            self.data[offset + 1],
+        ]))
+    }
+
+    pub fn u32(&self, mut offset: usize) -> Result<u32, ReaderError> {
+        self.bound_check(offset, 4)?;
+        offset += self.current_offset;
+        Ok(u32::from_le_bytes([
+            self.data[offset + 0],
+            self.data[offset + 1],
+            self.data[offset + 2],
+            self.data[offset + 3],
+        ]))
+    }
+
+    pub fn i8(&self, offset: usize) -> Result<i8, ReaderError> {
+        self.bound_check(offset, 1)?;
+        Ok(self.data[self.current_offset + offset] as i8)
+    }
+
+    pub fn i16(&self, mut offset: usize) -> Result<i16, ReaderError> {
+        self.bound_check(offset, 2)?;
+        offset += self.current_offset;
+        Ok(i16::from_le_bytes([
+            self.data[offset + 0],
+            self.data[offset + 1],
+        ]))
+    }
+
+    pub fn i32(&self, mut offset: usize) -> Result<i32, ReaderError> {
+        self.bound_check(offset, 4)?;
+        offset += self.current_offset;
+        Ok(i32::from_le_bytes([
+            self.data[offset + 0],
+            self.data[offset + 1],
+            self.data[offset + 2],
+            self.data[offset + 3],
+        ]))
+    }
+
+    pub fn f32(&self, mut offset: usize) -> Result<f32, ReaderError> {
+        self.bound_check(offset, 4)?;
+        offset += self.current_offset;
+        Ok(f32::from_le_bytes([
+            self.data[offset + 0],
+            self.data[offset + 1],
+            self.data[offset + 2],
+            self.data[offset + 3],
+        ]))
+    }
+
+    pub fn f64(&self, mut offset: usize) -> Result<f64, ReaderError> {
+        self.bound_check(offset, 8)?;
+        offset += self.current_offset;
+        Ok(f64::from_le_bytes([
+            self.data[offset + 0],
+            self.data[offset + 1],
+            self.data[offset + 2],
+            self.data[offset + 3],
+            self.data[offset + 4],
+            self.data[offset + 5],
+            self.data[offset + 6],
+            self.data[offset + 7],
+        ]))
+    }
+
+    pub fn uuid(&self, mut offset: usize) -> Result<UUID, ReaderError> {
+        self.bound_check(offset, 16)?;
+        offset += self.current_offset;
+        Ok(UUID([
+            self.data[offset + 0],
+            self.data[offset + 1],
+            self.data[offset + 2],
+            self.data[offset + 3],
+            self.data[offset + 4],
+            self.data[offset + 5],
+            self.data[offset + 6],
+            self.data[offset + 7],
+            self.data[offset + 8],
+            self.data[offset + 9],
+            self.data[offset + 10],
+            self.data[offset + 11],
+            self.data[offset + 12],
+            self.data[offset + 13],
+            self.data[offset + 14],
+            self.data[offset + 15],
+        ]))
+    }
+}
+
+impl<'a> From<&'a Vec<u8>> for VossReader<'a> {
+    fn from(vec: &'a Vec<u8>) -> VossReader<'a> {
+        VossReader {
+            offset_stack: Vec::with_capacity(16),
+            current_offset: 0,
+            data: vec,
+        }
     }
 }
