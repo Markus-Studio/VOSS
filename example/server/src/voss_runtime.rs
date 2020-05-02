@@ -4,7 +4,7 @@ use std::fmt;
 #[derive(Debug, Clone)]
 pub enum BuilderError {
     OutOfBound,
-    Overflow
+    Overflow,
 }
 
 impl fmt::Display for BuilderError {
@@ -192,11 +192,31 @@ impl VossBuilder {
 
     pub fn str(&mut self, mut offset: usize, value: String) -> Result<(), BuilderError> {
         if value.len() == 0 {
-            return Ok(())
+            self.u32(offset, 0);
+            self.u32(offset + 4, 0);
+            return Ok(());
         }
 
-        for value in value.encode_utf16() {
+        self.bound_check(offset, 8)?;
+
+        let mut string_offset = self.next_offset;
+        let upper_size = value.len() * 2;
+        let mut count = 0;
+        self.set_next_offset(self.next_offset + upper_size)?;
+        let relative = string_offset - offset;
+
+        for cp in value.encode_utf16() {
+            let raw = cp.to_le_bytes();
+            self.data[string_offset + 0] = raw[0];
+            self.data[string_offset + 1] = raw[1];
+            count += 1;
+            string_offset += 2;
         }
+
+        let size = (count * 2) as u32;
+        self.next_offset = self.next_offset - upper_size + size;
+        self.u32(offset, size);
+        self.u32(offset + 4, relative);
 
         Ok(())
     }
