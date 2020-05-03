@@ -151,7 +151,7 @@ export class IReader implements Reader {
 
     const length = size / 2;
     const stringOffset = offset + relativeOffset;
-    this.boundCheck(stringOffset, size);
+    this.boundCheck(stringOffset - this.currentOffset, size);
 
     let result = '';
     for (let i = 0, j = stringOffset; i < length; ++i, j += 2) {

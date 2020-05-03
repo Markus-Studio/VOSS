@@ -1,4 +1,4 @@
-export function nextNumberDividableByPowOfTwo(
+export function nextNumberDivisibleByPowOfTwo(
   number: number,
   pow: number
 ): number {
