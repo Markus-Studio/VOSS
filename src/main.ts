@@ -4,6 +4,7 @@ import { join } from 'path';
 import { genIR } from './ir/gen';
 import { Program } from './ir/program';
 import { generateTypescriptClient } from './backend/typescript';
+import { generateRustServer } from './backend/rust';
 
 const filename = process.argv[2] || 'test.voss';
 if (!filename) {
@@ -25,4 +26,6 @@ try {
 }
 
 const typescriptSource = generateTypescriptClient(program);
+const rustSource = generateRustServer(program);
 writeFileSync(filePath + '.ts', typescriptSource);
+writeFileSync(filePath + '.rs', rustSource);

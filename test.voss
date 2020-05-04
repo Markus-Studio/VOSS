@@ -1,5 +1,5 @@
 struct FieldTypeObjectReference {
-  ref:TypespaceObject;
+  obj:TypespaceObject;
 }
 
 struct FieldTypePrimitive {
@@ -20,5 +20,5 @@ object TypespaceObject {
 object TypespaceObjectField {
   title:str;
   owner:TypespaceObject;
-  type:FieldType;
+  field_type:FieldType;
 }

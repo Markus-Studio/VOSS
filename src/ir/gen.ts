@@ -1,9 +1,11 @@
 import * as AST from '../frontend/ast';
-import { Counter } from '../utils';
+import { Counter, toSnakeCase } from '../utils';
 import * as toposort from 'toposort';
 import { Program } from './program';
 import { IRObject, IRObjectField, IRView } from './object';
 import { IREnum, IREnumCase } from './enum';
+
+const RESERVED_NAMES = new Set<string>(['uuid', 'ref', 'type', 'voss_session']);
 
 export function genIR(ast: AST.Root) {
   const declaration2id = new Map<AST.Declaration, number>();
@@ -16,6 +18,10 @@ export function genIR(ast: AST.Root) {
     const name = declaration.name;
     declaration2id.set(declaration, id);
 
+    if (RESERVED_NAMES.has(toSnakeCase(name))) {
+      throw new Error(`${name} is a reserved name.`);
+    }
+
     if (name2declaration.has(name)) {
       throw new Error(`Name ${name} is already in use.`);
     }
@@ -23,6 +29,9 @@ export function genIR(ast: AST.Root) {
     name2declaration.set(name, declaration);
 
     for (const member of declaration.members) {
+      if (RESERVED_NAMES.has(toSnakeCase(member.name))) {
+        throw new Error(`${member.name} is a reserved name.`);
+      }
       dependencyGraph.push([name, member.type.name]);
     }
   }

@@ -151,7 +151,8 @@ export abstract class VossSessionBase<T extends EnumCase> {
   private async requestClockOffset(): Promise<number> {
     if (!this.websocket)
       throw new Error('WebSocket connection is not established yet.');
-    const message = this.createClockMessage(this.now());
+    const request = this.createClockRequest(this.now());
+    const message = IBuilder.SerializeEnum(request).buffer;
     const promise = createResolvable<number>();
     this.pendingClockRequests.push(promise);
 
@@ -213,6 +214,6 @@ export abstract class VossSessionBase<T extends EnumCase> {
     this.pendingMessages.clear();
   }
 
-  protected abstract createClockMessage(timestamp: number): ArrayBuffer;
+  protected abstract createClockRequest(timestamp: number): T;
   protected abstract onMessage(message: T): void;
 }

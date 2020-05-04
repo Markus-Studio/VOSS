@@ -1,16 +1,51 @@
+import { PrimitiveTypeName, IRType } from './ir/type';
+import { camelCase, snakeCase, words, upperFirst } from 'lodash';
+
 export * from '../runtime/utils';
 
 export function toCamelCase(str: string) {
-  return str
-    .replace(/(?:^\w|[A-Z]|\b\w)/g, (word, index) =>
-      index === 0 ? word.toLowerCase() : word.toUpperCase()
-    )
-    .replace(/\s+/g, '');
+  return (str.startsWith('_') ? '_' : '') + camelCase(str);
 }
 
 export function toPascalCase(str: string) {
-  const camel = toCamelCase(str);
-  return camel[0].toUpperCase() + camel.slice(1);
+  return (
+    (str.startsWith('_') ? '_' : '') +
+    words(str.replace(/['\u2019]/g, '')).reduce((result, word, index) => {
+      if (word.toUpperCase() === word) {
+        return result + word;
+      }
+
+      word = word.toLowerCase();
+      return result + upperFirst(word);
+    }, '')
+  );
+}
+
+export function toSnakeCase(str: string) {
+  return (str.startsWith('_') ? '_' : '') + snakeCase(str);
+}
+
+export function getObjectFieldPrivateType(
+  map: Record<PrimitiveTypeName, string>,
+  type: IRType
+): string {
+  if (type.isPrimitive) {
+    return map[type.asPrimitiveName()];
+  }
+
+  if (type.isStructure) {
+    return toPascalCase(type.asObject().name);
+  }
+
+  if (type.isRootObject) {
+    return map.uuid;
+  }
+
+  if (type.isEnum) {
+    return toPascalCase(type.asEnum().name);
+  }
+
+  throw new Error('Not implemented.');
 }
 
 export class Counter<K> {
