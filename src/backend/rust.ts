@@ -1,7 +1,7 @@
 import { Program } from '../ir/program';
 import { PrettyWriter } from './writer';
 import { PrimitiveTypeName } from '../ir/type';
-import { IRObject } from '../ir/object';
+import { IRObject, IRObjectField } from '../ir/object';
 import { toSnakeCase, getObjectFieldPrivateType, toPascalCase } from '../utils';
 import { fastPow2Log2 } from '../../runtime/utils';
 import { runtime } from './rust.runtime';
@@ -31,13 +31,15 @@ export function generateRustServer(program: Program): string {
     generateObjectStruct(writer, object);
     generateObjectImplVossStruct(writer, object);
     generateObjectImplFromReader(writer, object);
+    generateObjectImpl(writer, object);
   }
 
   return writer.getSource();
 }
 
 function generateObjectStruct(writer: PrettyWriter, object: IRObject): void {
-  writer.write(`pub struct ${toPascalCase(object.name)} {\n`);
+  writer.write(`#[derive(Copy, Clone)]
+  pub struct ${toPascalCase(object.name)} {\n`);
   for (const field of object.getFields()) {
     writer.write(toSnakeCase(field.name) + ': ');
     writer.write(getObjectFieldPrivateType(PRIMITIVE_TYPE, field.type) + ',\n');
@@ -107,5 +109,52 @@ function generateObjectImplFromReader(
           .join('\n')}
         })
       }
+  }\n`);
+}
+
+function generateObjectImpl(writer: PrettyWriter, object: IRObject) {
+  const name = toPascalCase(object.name);
+  writer.write(`impl ${name} {
+    pub fn new(
+      ${[...object.getFields()]
+        .map((field) => {
+          let type = field.type.isPrimitive
+            ? PRIMITIVE_TYPE[field.type.asPrimitiveName()]
+            : field.type.isRootObject
+            ? `&${toPascalCase(field.type.name)}`
+            : toPascalCase(field.type.name);
+          return `${toSnakeCase(field.name)}: ${type},`;
+        })
+        .join('\n')}
+    ) -> ${name} {
+      ${name} {
+        ${[...object.getFields()]
+          .map((field) => {
+            let uri = field.type.isRootObject ? '.get_uuid()' : '';
+            let name = toSnakeCase(field.name);
+            return uri ? `${name}: ${name}${uri},` : `${name},`;
+          })
+          .join('\n')}
+      }
+    }\n`);
+
+  for (const field of object.getFields()) {
+    generateObjectPropertyGetter(writer, field);
+    if (field.name !== 'uuid') {
+      // generateObjectPropertySetter(writer, field);
+    }
+  }
+
+  writer.write(`}\n`);
+}
+
+function generateObjectPropertyGetter(
+  writer: PrettyWriter,
+  field: IRObjectField
+) {
+  const name = toSnakeCase('get-' + field.name);
+  const type = getObjectFieldPrivateType(PRIMITIVE_TYPE, field.type);
+  writer.write(`pub fn ${name}(&self) -> ${type} {
+    self.${toSnakeCase(field.name)}
   }\n`);
 }

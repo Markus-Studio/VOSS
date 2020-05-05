@@ -1,5 +1,5 @@
 export const runtime = `
-mod voss_runtime {
+pub mod voss_runtime {
     use std::error;
     use std::fmt;
 
@@ -133,7 +133,7 @@ mod voss_runtime {
         }
 
         #[inline]
-        pub fn i8(&mut self, mut offset: usize, value: i8) -> Result<(), BuilderError> {
+        pub fn i8(&mut self, offset: usize, value: i8) -> Result<(), BuilderError> {
             self.bound_check(offset, 1)?;
             self.data[self.current_offset + offset] = value.to_le_bytes()[0];
             Ok(())
@@ -450,7 +450,7 @@ mod voss_runtime {
         }
 
         #[inline]
-        pub fn str(&self, mut offset: usize) -> Result<String, ReaderError> {
+        pub fn str(&self, offset: usize) -> Result<String, ReaderError> {
             let size = self.u32(offset)? as usize;
             let relative_offset = self.u32(offset + 4)? as usize;
 
