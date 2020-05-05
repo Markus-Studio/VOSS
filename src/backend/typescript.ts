@@ -82,8 +82,8 @@ function generateObjectClass(writer: PrettyWriter, object: IRObject): void {
   }
 
   // The data for the serialization.
-  writer.write(`readonly maxElementAlignment = ${maxAlign};\n`);
-  writer.write(`readonly size = ${object.getSize()};\n`);
+  writer.write(`static readonly maxElementAlignment = ${maxAlign};\n`);
+  writer.write(`static readonly size = ${object.getSize()};\n`);
 
   // ... Build the constructor.
   generateObjectClassConstructor(writer, object);

@@ -1,4 +1,4 @@
-import { Builder, Struct, EnumCase } from './types';
+import { Builder, Struct, EnumCase, StructStatic } from './types';
 import { nextNumberDivisibleByPowOfTwo, fastPow2Log2 } from './utils';
 
 export class IBuilder implements Builder {
@@ -15,7 +15,9 @@ export class IBuilder implements Builder {
   }
 
   static SerializeStruct(struct: Struct): Uint8Array {
-    const builder = new IBuilder(struct.size);
+    const builder = new IBuilder(
+      ((struct.constructor as any) as StructStatic).size
+    );
     struct.serialize(builder);
     return builder.build();
   }
@@ -42,8 +44,9 @@ export class IBuilder implements Builder {
   }
 
   struct(offset: number, value: Struct): void {
-    const size = value.size;
-    const align = value.maxElementAlignment;
+    const constructor = (value.constructor as any as StructStatic);
+    const size = constructor.size;
+    const align = constructor.maxElementAlignment;
     const pointerOffset = offset + this.currentOffset;
 
     if (size === 0) {

@@ -58,7 +58,10 @@ export interface Reader {
 }
 
 export interface Struct {
-  maxElementAlignment: number;
-  size: number;
   serialize(builder: Builder): void;
+}
+
+export interface StructStatic {
+  readonly maxElementAlignment: number;
+  readonly size: number;
 }
