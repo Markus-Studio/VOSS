@@ -1,94 +1,128 @@
 export class PrettyWriter {
   private lines: string[] = [];
-  private _indentLevel = 0;
+  private indentLevel = 0;
   private currentIndent = '';
-  private leftOver?: string;
+  private leftover?: string;
+  private stack: ('[' | '(' | '{')[] = [];
 
-  private get indentLevel() {
-    return this._indentLevel;
+  private push(ch: '{' | '[' | '(') {
+    this.stack.push(ch);
   }
 
-  private set indentLevel(value: number) {
-    this._indentLevel = value;
-    if (value <= 0) {
-      this.currentIndent = '';
-    } else {
-      this.currentIndent = '  '.repeat(value);
+  private pop(ch: '{' | '[' | '('): boolean {
+    const x = this.stack.pop();
+    if (x === ch) {
+      return true;
+    } else if (x) {
+      this.stack.push(x);
     }
+    return false;
   }
 
   private writeLine(line: string) {
     line = line.trim();
+    const prevLine =
+      this.lines.length === 0 ? '' : this.lines[this.lines.length - 1];
+    const isPrevLineBlank = prevLine === '';
+
     if (line === '') {
+      if (!isPrevLineBlank) this.lines.push('');
       return;
     }
 
-    let indentOffset = 0;
-    for (; indentOffset < line.length; ++indentOffset) {
-      const char = line[indentOffset];
-      if (char === '{') {
-        break;
-      } else if (char === '}') {
-        this.dedent();
-      }
-    }
-
-    const indentation = this.currentIndent;
-
-    for (; indentOffset < line.length; ++indentOffset) {
-      const char = line[indentOffset];
-      if (char === '{') {
-        this.indent();
-      } else if (char === '}') {
-        this.dedent();
-      }
-    }
-
     if (
-      this.lines.length > 0 &&
-      line.indexOf('{') > 0 &&
-      line.indexOf('}') < 0 &&
-      this.lines[this.lines.length - 1] !== '' &&
-      !this.lines[this.lines.length - 1].endsWith('{') &&
-      line.indexOf('({') < 0
+      !isPrevLineBlank &&
+      line.endsWith('{') &&
+      !prevLine.endsWith('{') &&
+      !prevLine.endsWith(']')
+    ) {
+      this.lines.push('');
+    } else if (
+      !isPrevLineBlank &&
+      line.endsWith(']') &&
+      !prevLine.endsWith(']')
     ) {
       this.lines.push('');
     }
 
-    if (
-      line === '}' &&
-      this.lines.length > 0 &&
-      this.lines[this.lines.length - 1] === ''
-    ) {
-      this.lines.pop();
+    let popped = false;
+    let lastIndentionIndex = 0;
+    const pop = (char: '(' | '{' | '[') => {
+      if (!this.pop(char)) {
+        return;
+      }
+      popped = true;
+    };
+
+    for (const char of line) {
+      let br = false;
+      switch (char) {
+        case '}':
+          pop('{');
+          break;
+        case ')':
+          pop('(');
+          break;
+        case ']':
+          pop('[');
+          break;
+        default:
+          br = true;
+      }
+      if (br) break;
+      lastIndentionIndex += 1;
     }
 
-    const currentLine = indentation + line;
+    if (popped) this.dedent();
+
+    const currentLine = this.currentIndent + line;
     this.lines.push(currentLine);
 
-    if (
-      this.lines.length > 1 &&
-      line.endsWith('}') &&
-      line.indexOf('{') < 0 &&
-      !this.lines[this.lines.length - 2].endsWith('}')
-    ) {
-      this.lines.push('');
+    let pushed = 0;
+
+    for (let i = lastIndentionIndex; i < line.length; ++i) {
+      const char = line[i];
+      switch (char) {
+        case '{':
+        case '(':
+        case '[':
+          this.push(char);
+          pushed += 1;
+          break;
+        case '}':
+          if (this.pop('{')) pushed -= 1;
+          break;
+        case ')':
+          if (this.pop('(')) pushed -= 1;
+          break;
+        case ']':
+          if (this.pop('[')) pushed -= 1;
+          break;
+      }
+    }
+
+    if (pushed > 0) {
+      this.indent();
+    }
+
+    if (pushed < 0) {
+      this.dedent();
     }
   }
 
   write(chunk: string): void {
-    if (this.leftOver) {
-      chunk = this.leftOver + chunk;
-      this.leftOver = undefined;
+    if (this.leftover) {
+      chunk = this.leftover + chunk;
+      this.leftover = undefined;
       return this.write(chunk);
     }
 
-    const lines = chunk.split(/\r?\n/g);
+    let lines = chunk.split(/\r?\n/g);
     const lastPart = lines.pop();
 
-    if (lastPart !== '') {
-      this.leftOver = lastPart;
-    }
+    if (lastPart !== '') this.leftover = lastPart;
+
+    // lines = removeCommonIndent(lines);
 
     for (const line of lines) {
       this.writeLine(line);
@@ -97,16 +131,50 @@ export class PrettyWriter {
 
   indent() {
     this.indentLevel += 1;
+    this.currentIndent = '  '.repeat(this.indentLevel);
   }
 
   dedent() {
     this.indentLevel -= 1;
+    this.currentIndent = '  '.repeat(this.indentLevel);
   }
 
   getSource(): string {
-    if (this.leftOver) {
-      this.writeLine(this.leftOver);
+    if (this.leftover) {
+      this.writeLine(this.leftover);
     }
     return this.lines.join('\n');
   }
+}
+
+function getCommonIndent(lines: string[]): string {
+  if (lines.length === 0) return '';
+
+  let result = '';
+
+  const minLength = Math.min(...lines.map((line) => line.length));
+
+  for (let i = 0; minLength; ++i) {
+    let ch = lines[0][i];
+
+    if (ch !== ' ' && ch !== '\t') {
+      return result;
+    }
+
+    for (const line of lines) {
+      if (line[i] !== ch) {
+        return result;
+      }
+    }
+
+    result += ch;
+  }
+
+  return result;
+}
+
+function removeCommonIndent(lines: string[]): string[] {
+  if (lines.length === 0) return [];
+  const indentLength = getCommonIndent(lines).length;
+  return lines.map((line) => line.slice(indentLength));
 }

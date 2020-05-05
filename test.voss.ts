@@ -10,6 +10,7 @@ import {
   Struct,
   VossSessionBase,
 } from './runtime';
+
 type UUID = string;
 
 export interface FieldTypePrimitive$Data {
@@ -68,8 +69,10 @@ export class TypespaceObject extends IChangeNotifier implements Struct, ChangeNo
   setTitle(session: VossSession, value: string): Promise<void> {
     this.data.title = value;
     this.emitChange();
+
     return session.sendRequest((replyId, timestamp) => ({
       type: _RPCMessage$Type.ObjectTypespaceObjectSetTitle,
+
       value: new _ObjectTypespaceObjectSetTitleRequest({
         replyId,
         timestamp,
@@ -86,8 +89,10 @@ export class TypespaceObject extends IChangeNotifier implements Struct, ChangeNo
   setX(session: VossSession, value: number): Promise<void> {
     this.data.x = value;
     this.emitChange();
+
     return session.sendRequest((replyId, timestamp) => ({
       type: _RPCMessage$Type.ObjectTypespaceObjectSetX,
+
       value: new _ObjectTypespaceObjectSetXRequest({
         replyId,
         timestamp,
@@ -104,8 +109,10 @@ export class TypespaceObject extends IChangeNotifier implements Struct, ChangeNo
   setY(session: VossSession, value: number): Promise<void> {
     this.data.y = value;
     this.emitChange();
+
     return session.sendRequest((replyId, timestamp) => ({
       type: _RPCMessage$Type.ObjectTypespaceObjectSetY,
+
       value: new _ObjectTypespaceObjectSetYRequest({
         replyId,
         timestamp,
@@ -193,8 +200,10 @@ export class TypespaceObjectField extends IChangeNotifier implements Struct, Cha
   setTitle(session: VossSession, value: string): Promise<void> {
     this.data.title = value;
     this.emitChange();
+
     return session.sendRequest((replyId, timestamp) => ({
       type: _RPCMessage$Type.ObjectTypespaceObjectFieldSetTitle,
+
       value: new _ObjectTypespaceObjectFieldSetTitleRequest({
         replyId,
         timestamp,
@@ -211,8 +220,10 @@ export class TypespaceObjectField extends IChangeNotifier implements Struct, Cha
   setOwner(session: VossSession, value: TypespaceObject): Promise<void> {
     this.data.owner = value.getUuid();
     this.emitChange();
+
     return session.sendRequest((replyId, timestamp) => ({
       type: _RPCMessage$Type.ObjectTypespaceObjectFieldSetOwner,
+
       value: new _ObjectTypespaceObjectFieldSetOwnerRequest({
         replyId,
         timestamp,
@@ -229,8 +240,10 @@ export class TypespaceObjectField extends IChangeNotifier implements Struct, Cha
   setFieldType(session: VossSession, value: FieldType): Promise<void> {
     this.data.fieldType = value;
     this.emitChange();
+
     return session.sendRequest((replyId, timestamp) => ({
       type: _RPCMessage$Type.ObjectTypespaceObjectFieldSetFieldType,
+
       value: new _ObjectTypespaceObjectFieldSetFieldTypeRequest({
         replyId,
         timestamp,
@@ -953,7 +966,6 @@ export const enum FieldType$Type {
   FieldTypeObjectReference = 0,
   FieldTypePrimitive = 1,
 }
-
 export type FieldType =
   | EnumCase<FieldType$Type.FieldTypeObjectReference, FieldTypeObjectReference>
   | EnumCase<FieldType$Type.FieldTypePrimitive, FieldTypePrimitive>
@@ -980,7 +992,6 @@ export const enum _RPCMessage$Type {
   ObjectTypespaceObjectFieldSetOwner = 16785924,
   ObjectTypespaceObjectFieldSetFieldType = 33563140,
 }
-
 export type _RPCMessage =
   | EnumCase<_RPCMessage$Type.Clock, _ClockData>
   | EnumCase<_RPCMessage$Type.Reply, _ReplyData>
@@ -1028,6 +1039,7 @@ export class VossSession extends VossSessionBase<_RPCMessage> {
       type: _RPCMessage$Type.FetchByUUID,
       value: new _FetchByUUIDRequest({ replyId, uuid }),
     }));
+
     return this.objects.get(uuid);
   }
 
