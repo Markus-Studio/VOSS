@@ -1,6 +1,6 @@
 import { Program } from '../ir/program';
 import { PrettyWriter } from './writer';
-import { PrimitiveTypeName } from '../ir/type';
+import { PrimitiveTypeName, IRType } from '../ir/type';
 import { IRObject, IRObjectField } from '../ir/object';
 import { toSnakeCase, getObjectFieldPrivateType, toPascalCase } from '../utils';
 import { fastPow2Log2 } from '../../runtime/utils';
@@ -39,7 +39,7 @@ export function generateRustServer(program: Program): string {
 }
 
 function generateObjectStruct(writer: PrettyWriter, object: IRObject): void {
-  writer.write(`#[derive(Copy, Clone)]
+  writer.write(`#[derive(Clone)]
   pub struct ${toPascalCase(object.name)} {\n`);
   for (const field of object.getFields()) {
     writer.write(toSnakeCase(field.name) + ': ');
@@ -77,7 +77,7 @@ function generateObjectImplVossStruct(
               : field.type.isEnum
               ? 'oneof'
               : field.type.asPrimitiveName();
-            if (writeFn === 'object') uri = '&' + uri;
+            if (isRef(field.type)) uri = '&' + uri;
             return `builder.${writeFn}(${offset}, ${uri})?;`;
           })
           .join('\n')}
@@ -155,7 +155,12 @@ function generateObjectPropertyGetter(
 ) {
   const name = toSnakeCase('get-' + field.name);
   const type = getObjectFieldPrivateType(PRIMITIVE_TYPE, field.type);
-  writer.write(`pub fn ${name}(&self) -> ${type} {
-    self.${toSnakeCase(field.name)}
+  const ref = isRef(field.type) ? '&' : '';
+  writer.write(`pub fn ${name}(&self) -> ${ref}${type} {
+    ${ref}self.${toSnakeCase(field.name)}
   }\n`);
+}
+
+function isRef(type: IRType): boolean {
+  return !(type.isPrimitive && type.name !== 'str');
 }

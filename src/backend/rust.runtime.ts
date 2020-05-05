@@ -223,7 +223,7 @@ pub mod voss_runtime {
     }
 
     #[inline]
-    pub fn str(&mut self, offset: usize, value: String) -> Result<(), BuilderError> {
+    pub fn str(&mut self, offset: usize, value: &String) -> Result<(), BuilderError> {
       if value.len() == 0 {
         self.u32(offset, 0)?;
         self.u32(offset + 4, 0)?;

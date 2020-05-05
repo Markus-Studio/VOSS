@@ -4,6 +4,7 @@ struct Point2D {
 }
 
 struct Circle {
+  name: str;
   radius: f32;
   center: Point2D;
 }
