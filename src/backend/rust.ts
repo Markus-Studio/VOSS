@@ -92,7 +92,7 @@ function generateObjectImplFromReader(
         Ok(${name} {
         ${[...object.getFields()]
           .map((field) => {
-            const uri = 'self.' + toSnakeCase(field.name);
+            const uri = toSnakeCase(field.name);
             const offset = field.getOffset();
             const writeFn: string = field.type.isRootObject
               ? 'uuid'
@@ -101,8 +101,7 @@ function generateObjectImplFromReader(
               : field.type.isEnum
               ? 'oneof'
               : field.type.asPrimitiveName();
-            const fn = toSnakeCase(field.name);
-            return `${fn}: builder.${writeFn}(${offset}, ${uri})?,`;
+            return `${uri}: reader.${writeFn}(${offset})?,`;
           })
           .join('\n')}
         })

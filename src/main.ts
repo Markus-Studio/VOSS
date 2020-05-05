@@ -1,10 +1,11 @@
 import { parse } from './frontend/parser';
 import { readFileSync, writeFileSync } from 'fs';
-import { join } from 'path';
+import { join, basename, dirname } from 'path';
 import { genIR } from './ir/gen';
 import { Program } from './ir/program';
 import { generateTypescriptClient } from './backend/typescript';
 import { generateRustServer } from './backend/rust';
+import { toOutputName } from './utils';
 
 const filename = process.argv[2] || 'test.voss';
 if (!filename) {
@@ -27,5 +28,6 @@ try {
 
 const typescriptSource = generateTypescriptClient(program);
 const rustSource = generateRustServer(program);
-writeFileSync(filePath + '.ts', typescriptSource);
-writeFileSync(filePath + '.rs', rustSource);
+const outPath = join(dirname(filePath), toOutputName(basename(filePath)));
+writeFileSync(outPath + '.ts', typescriptSource);
+writeFileSync(outPath + '.rs', rustSource);

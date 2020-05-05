@@ -10,7 +10,7 @@ export function toCamelCase(str: string) {
 export function toPascalCase(str: string) {
   return (
     (str.startsWith('_') ? '_' : '') +
-    words(str.replace(/['\u2019]/g, '')).reduce((result, word, index) => {
+    words(str.replace(/['\u2019]/g, '')).reduce((result, word) => {
       if (word.toUpperCase() === word) {
         return result + word;
       }
@@ -23,6 +23,12 @@ export function toPascalCase(str: string) {
 
 export function toSnakeCase(str: string) {
   return (str.startsWith('_') ? '_' : '') + snakeCase(str);
+}
+
+export function toOutputName(basename: string): string {
+  return (
+    toCamelCase(basename.replace(/\.voss$/g, '').replace(/\./, ' ')) + '-voss'
+  );
 }
 
 export function getObjectFieldPrivateType(
