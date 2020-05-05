@@ -33,6 +33,9 @@ export class PrettyWriter {
     if (
       !isPrevLineBlank &&
       line.endsWith('{') &&
+      !line.startsWith('}') &&
+      !line.startsWith(')') &&
+      !line.startsWith(']') &&
       !prevLine.endsWith('{') &&
       !prevLine.endsWith(']')
     ) {
@@ -40,7 +43,8 @@ export class PrettyWriter {
     } else if (
       !isPrevLineBlank &&
       line.endsWith(']') &&
-      !prevLine.endsWith(']')
+      !prevLine.endsWith(']') &&
+      !prevLine.endsWith('{')
     ) {
       this.lines.push('');
     }

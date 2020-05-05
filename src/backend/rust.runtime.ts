@@ -3,7 +3,7 @@ mod voss_runtime {
     use std::error;
     use std::fmt;
 
-    #[derive(PartialEq)]
+    #[derive(PartialEq, Copy, Clone)]
     pub struct UUID([u8; 16]);
 
     #[derive(Debug, Clone)]
@@ -487,6 +487,10 @@ mod voss_runtime {
                 return Err(ReaderError::InvalidBuffer);
             }
             return Ok(result.unwrap());
+        }
+
+        pub fn object<T: Sized + FromReader>(&self, offset: usize) -> Result<T, ReaderError> {
+            T::from_reader(self)
         }
     }
 

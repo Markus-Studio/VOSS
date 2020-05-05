@@ -65,7 +65,7 @@ function generateObjectImplVossStruct(
     ) -> Result<(), voss_runtime::BuilderError> {
         ${[...object.getFields()]
           .map((field) => {
-            const uri = 'self.' + toSnakeCase(field.name);
+            let uri = 'self.' + toSnakeCase(field.name);
             const offset = field.getOffset();
             const writeFn: string = field.type.isRootObject
               ? 'uuid'
@@ -74,6 +74,7 @@ function generateObjectImplVossStruct(
               : field.type.isEnum
               ? 'oneof'
               : field.type.asPrimitiveName();
+            if (writeFn === 'object') uri = '&' + uri;
             return `builder.${writeFn}(${offset}, ${uri})?;`;
           })
           .join('\n')}
@@ -97,7 +98,7 @@ function generateObjectImplFromReader(
             const writeFn: string = field.type.isRootObject
               ? 'uuid'
               : field.type.isObject
-              ? 'object'
+              ? `object::<${toPascalCase(field.type.name)}>`
               : field.type.isEnum
               ? 'oneof'
               : field.type.asPrimitiveName();

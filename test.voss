@@ -1,24 +1,9 @@
-struct FieldTypeObjectReference {
-  obj:TypespaceObject;
+struct Point2D {
+  x: f32;
+  y: f32;
 }
 
-struct FieldTypePrimitive {
-  provider:str;
-}
-
-oneof FieldType {
-  FieldTypeObjectReference,
-  FieldTypePrimitive
-}
-
-object TypespaceObject {
-  title:str;
-  x:i32;
-  y:i32;
-}
-
-object TypespaceObjectField {
-  title:str;
-  owner:TypespaceObject;
-  field_type:FieldType;
+struct Circle {
+  radius: f32;
+  center: Point2D;
 }
