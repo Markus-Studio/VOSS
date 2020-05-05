@@ -31,8 +31,9 @@ export class IReader implements Reader {
   }
 
   struct<T extends Struct>(offset: number, deserializer: DeserializeFn<T>): T {
+    this.boundCheck(offset, 4);
     const pointerOffset = offset + this.currentOffset;
-    const relativeOffset = this.u32(pointerOffset);
+    const relativeOffset = this.view.getUint32(pointerOffset, true);
     const structOffset = offset + relativeOffset;
 
     if (structOffset >= this.view.byteLength) {

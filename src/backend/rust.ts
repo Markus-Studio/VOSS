@@ -23,6 +23,7 @@ const PRIMITIVE_TYPE: Record<PrimitiveTypeName, string> = {
 export function generateRustServer(program: Program): string {
   const writer = new PrettyWriter();
 
+  writer.write('#![allow(dead_code)]\n');
   writer.write(runtime + '\n');
 
   program.getRPC();
