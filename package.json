@@ -6,7 +6,7 @@
   "license": "MIT",
   "scripts": {
     "grammar": "antlr4ts -o grammar Voss.g4",
-    "fmt": "prettier --write 'src/**/*.ts'"
+    "fmt": "prettier --write 'src/**/*.ts' 'runtime/**/*.ts'"
   },
   "dependencies": {
     "antlr4ts": "^0.5.0-alpha.3",

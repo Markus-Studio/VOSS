@@ -66,23 +66,12 @@ export class IReader implements Reader {
   uuid(offset: number): string {
     this.boundCheck(offset, 16);
     offset += this.currentOffset;
-    const a = this.view
-      .getUint32(offset + 0, false)
-      .toString(16)
-      .padStart(4, '0');
-    const b = this.view
-      .getUint32(offset + 8, false)
-      .toString(16)
-      .padStart(4, '0');
-    const c = this.view
-      .getUint32(offset + 16, false)
-      .toString(16)
-      .padStart(4, '0');
-    const d = this.view
-      .getUint32(offset + 24, false)
-      .toString(16)
-      .padStart(4, '0');
-    return a + b + c + d;
+    const p = (n: number) =>
+      this.view
+        .getUint32(offset + n * 4, false)
+        .toString(16)
+        .padStart(8, '0');
+    return p(0) + p(1) + p(2) + p(3);
   }
 
   u8(offset: number): number {
