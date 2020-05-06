@@ -135,8 +135,8 @@ function buildSetFieldMessage(
     ? program.resolveType('uuid')
     : field.type;
 
-  messageData.addField(new IRObjectField('previousValue', fieldType));
-  messageData.addField(new IRObjectField('newValue', fieldType));
+  messageData.addField(new IRObjectField('current', fieldType));
+  messageData.addField(new IRObjectField('next', fieldType));
 
   program.addObject(messageData);
   return new IREnumCase(
