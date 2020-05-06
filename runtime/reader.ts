@@ -67,19 +67,19 @@ export class IReader implements Reader {
     this.boundCheck(offset, 16);
     offset += this.currentOffset;
     const a = this.view
-      .getUint32(offset + 0, true)
+      .getUint32(offset + 0, false)
       .toString(16)
       .padStart(4, '0');
     const b = this.view
-      .getUint32(offset + 8, true)
+      .getUint32(offset + 8, false)
       .toString(16)
       .padStart(4, '0');
     const c = this.view
-      .getUint32(offset + 16, true)
+      .getUint32(offset + 16, false)
       .toString(16)
       .padStart(4, '0');
     const d = this.view
-      .getUint32(offset + 24, true)
+      .getUint32(offset + 24, false)
       .toString(16)
       .padStart(4, '0');
     return a + b + c + d;

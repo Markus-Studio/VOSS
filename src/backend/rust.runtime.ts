@@ -2,10 +2,25 @@ export const runtime = `
 pub mod voss_runtime {
   use std::error;
   use std::fmt;
+  use std::fmt::Write;
   use std::cell::RefCell;
 
   #[derive(PartialEq, Copy, Clone)]
   pub struct UUID([u8; 16]);
+
+  impl std::fmt::Debug for UUID {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+      static CHARS: &'static [u8] = b"0123456789abcdef";
+      let mut s = String::with_capacity(32);
+
+      for &byte in self.0.iter() {
+        s.write_char(CHARS[(byte >>  4) as usize].into())?;
+        s.write_char(CHARS[(byte & 0xf) as usize].into())?
+      }
+
+      f.write_str(&s)
+    }
+  }
 
   #[derive(Debug, Clone)]
   pub enum BuilderError {

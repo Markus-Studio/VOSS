@@ -78,10 +78,10 @@ export class IBuilder implements Builder {
   uuid(offset: number, value: string): void {
     if (value.length !== 32) throw new Error('UUID must be 32 characters.');
     offset += this.currentOffset;
-    this.view.setUint32(offset, parseInt(value.slice(0, 8), 16), true);
-    this.view.setUint32(offset + 8, parseInt(value.slice(8, 16), 16), true);
-    this.view.setUint32(offset + 16, parseInt(value.slice(16, 24), 16), true);
-    this.view.setUint32(offset + 24, parseInt(value.slice(24, 32), 16), true);
+    this.view.setUint32(offset, parseInt(value.slice(0, 8), 16), false);
+    this.view.setUint32(offset + 8, parseInt(value.slice(8, 16), 16), false);
+    this.view.setUint32(offset + 16, parseInt(value.slice(16, 24), 16), false);
+    this.view.setUint32(offset + 24, parseInt(value.slice(24, 32), 16), false);
   }
 
   u8(offset: number, value: number): void {
