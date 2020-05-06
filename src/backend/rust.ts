@@ -39,7 +39,7 @@ export function generateRustServer(program: Program): string {
 }
 
 function generateObjectStruct(writer: PrettyWriter, object: IRObject): void {
-  writer.write(`#[derive(Clone)]
+  writer.write(`#[derive(Clone, Debug)]
   pub struct ${toPascalCase(object.name)} {\n`);
   for (const field of object.getFields()) {
     writer.write(toSnakeCase(field.name) + ': ');
