@@ -239,16 +239,16 @@ function buildCreateMessage(program: Program, object: IRObject): IREnumCase {
   );
 
   messageData.addField(
-    new IRObjectField('replyId', program.resolveType('u32'))
+    new IRObjectField('_replyId', program.resolveType('u32'))
   );
 
   messageData.addField(
-    new IRObjectField('timestamp', program.resolveType('f64'))
+    new IRObjectField('_timestamp', program.resolveType('f64'))
   );
 
-  messageData.addField(
-    new IRObjectField('data', program.resolveType(object.name))
-  );
+  for (const field of object.getFields()) {
+    messageData.addField(new IRObjectField(field.name, field.type));
+  }
 
   program.addObject(messageData);
   return new IREnumCase(
