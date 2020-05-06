@@ -131,9 +131,9 @@ function generateObjectImpl(writer: PrettyWriter, object: IRObject) {
       ${name} {
         ${[...object.getFields()]
           .map((field) => {
-            let uri = field.type.isRootObject ? '.get_uuid()' : '';
             let name = toSnakeCase(field.name);
-            return uri ? `${name}: ${name}${uri},` : `${name},`;
+            let uri = field.type.isRootObject ? `*${name}.get_uuid()` : '';
+            return uri ? `${name}: ${uri},` : `${name},`;
           })
           .join('\n')}
       }
@@ -162,5 +162,5 @@ function generateObjectPropertyGetter(
 }
 
 function isRef(type: IRType): boolean {
-  return !(type.isPrimitive && type.name !== 'str');
+  return !(type.isPrimitive && type.name !== 'str' && type.name !== 'uuid');
 }

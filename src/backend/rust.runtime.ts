@@ -4,6 +4,7 @@ pub mod voss_runtime {
   use std::fmt;
   use std::fmt::Write;
   use std::cell::RefCell;
+  use std::u8;
 
   #[derive(PartialEq, Copy, Clone)]
   pub struct UUID([u8; 16]);
@@ -19,6 +20,30 @@ pub mod voss_runtime {
       }
 
       f.write_str(&s)
+    }
+  }
+
+  impl UUID {
+    pub fn new(hash: &str) -> UUID {
+      assert_eq!(hash.len(), 32);
+      UUID([
+        u8::from_str_radix(&hash[0..2], 16).unwrap(),
+        u8::from_str_radix(&hash[2..4], 16).unwrap(),
+        u8::from_str_radix(&hash[4..6], 16).unwrap(),
+        u8::from_str_radix(&hash[6..8], 16).unwrap(),
+        u8::from_str_radix(&hash[8..10], 16).unwrap(),
+        u8::from_str_radix(&hash[10..12], 16).unwrap(),
+        u8::from_str_radix(&hash[12..14], 16).unwrap(),
+        u8::from_str_radix(&hash[14..16], 16).unwrap(),
+        u8::from_str_radix(&hash[16..18], 16).unwrap(),
+        u8::from_str_radix(&hash[18..20], 16).unwrap(),
+        u8::from_str_radix(&hash[20..22], 16).unwrap(),
+        u8::from_str_radix(&hash[22..24], 16).unwrap(),
+        u8::from_str_radix(&hash[24..26], 16).unwrap(),
+        u8::from_str_radix(&hash[26..28], 16).unwrap(),
+        u8::from_str_radix(&hash[28..30], 16).unwrap(),
+        u8::from_str_radix(&hash[30..32], 16).unwrap(),
+      ])
     }
   }
 
@@ -215,7 +240,7 @@ pub mod voss_runtime {
     }
 
     #[inline]
-    pub fn uuid(&mut self, mut offset: usize, value: UUID) -> Result<(), BuilderError> {
+    pub fn uuid(&mut self, mut offset: usize, value: &UUID) -> Result<(), BuilderError> {
       self.bound_check(offset, 16)?;
       offset += self.current_offset;
       self.data[offset + 0] = value.0[0];

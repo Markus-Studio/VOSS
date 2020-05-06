@@ -1,9 +1,9 @@
-struct Point2D {
+object Point2D {
   x: f64;
   y: f64;
 }
 
-struct Circle {
+object Circle {
   name: str;
   radius: f32;
   center: Point2D;
