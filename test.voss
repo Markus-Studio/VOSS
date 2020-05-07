@@ -1,16 +1,19 @@
-object Point2D {
+struct PolarCord {
+  r: f64;
+  phi: f64;
+}
+
+struct CartesianCord {
   x: f64;
   y: f64;
 }
 
-object Circle {
-  name: str;
-  group: Group;
-  radius: f32;
-  center: Point2D;
+oneof Point {
+  Polar(PolarCord),
+  Cartesian(CartesianCord)
 }
 
-object Group {
-  name: str;
-  @View(Circle, group) circles;
+object Circle {
+  r: f64;
+  center: Point;
 }

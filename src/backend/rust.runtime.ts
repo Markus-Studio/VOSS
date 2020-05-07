@@ -537,6 +537,7 @@ pub mod voss_runtime {
       return Ok(result.unwrap());
     }
 
+    #[inline]
     pub fn object<T: FromReader>(&self, offset: usize) -> Result<T, ReaderError> {
       let relative_offset = self.u32(offset)? as usize;
       let struct_offset = offset + relative_offset;
@@ -546,6 +547,15 @@ pub mod voss_runtime {
       }
 
       let old_offset = self.current_offset.replace(struct_offset);
+      let result = T::from_reader(self);
+      self.current_offset.replace(old_offset);
+      result
+    }
+
+    #[inline]
+    pub fn oneof<T: FromReader>(&self, mut offset: usize) -> Result<T, ReaderError> {
+      offset += self.current_offset.borrow().clone();
+      let old_offset = self.current_offset.replace(offset);
       let result = T::from_reader(self);
       self.current_offset.replace(old_offset);
       result
