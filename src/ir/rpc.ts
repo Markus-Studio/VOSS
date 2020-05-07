@@ -135,6 +135,9 @@ function buildSetFieldMessage(
     ? program.resolveType('hash16')
     : field.type;
 
+  messageData.addField(
+    new IRObjectField('target', program.resolveType('hash16'))
+  );
   messageData.addField(new IRObjectField('current', fieldType));
   messageData.addField(new IRObjectField('next', fieldType));
 

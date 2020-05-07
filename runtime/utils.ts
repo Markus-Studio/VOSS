@@ -1,3 +1,5 @@
+import { EnumCase } from './types';
+
 export function nextNumberDivisibleByPowOfTwo(
   number: number,
   pow: number
@@ -52,4 +54,8 @@ export function createResolvable<T>(): Resolvable<T> {
   });
   Object.assign(promise, { resolve, reject });
   return promise as Resolvable<T>;
+}
+
+export function enumEqual(a: EnumCase, b: EnumCase): boolean {
+  return a.type === b.type && a.value.equal(b.value);
 }

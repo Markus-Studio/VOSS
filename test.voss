@@ -1,19 +1,7 @@
-struct PolarCord {
-  r: f64;
-  phi: f64;
+object User {
+  group: Group;
 }
 
-struct CartesianCord {
-  x: f64;
-  y: f64;
-}
-
-oneof Point {
-  Polar(PolarCord),
-  Cartesian(CartesianCord)
-}
-
-object Circle {
-  r: f64;
-  center: Point;
+object Group {
+  @View(User, group) users;
 }

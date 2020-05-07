@@ -61,6 +61,7 @@ export interface Reader {
 
 export interface Struct {
   serialize(builder: Builder): void;
+  equal(struct: Struct): boolean;
 }
 
 export interface StructStatic {

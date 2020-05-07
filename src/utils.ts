@@ -31,6 +31,10 @@ export function toOutputName(basename: string): string {
   );
 }
 
+export function flatten<T>(data: T[] | T[][]): T[] {
+  return data.flat();
+}
+
 export function getObjectFieldPrivateType(
   map: Record<PrimitiveTypeName, string>,
   type: IRType

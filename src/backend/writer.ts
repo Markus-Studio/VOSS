@@ -79,7 +79,9 @@ export class PrettyWriter {
 
     if (popped) this.dedent();
 
-    const currentLine = this.currentIndent + line;
+    let indent = this.currentIndent;
+    if (prevLine.endsWith('&&') || prevLine.endsWith('||')) indent += '  ';
+    const currentLine = indent + line;
     this.lines.push(currentLine);
 
     let pushed = 0;
