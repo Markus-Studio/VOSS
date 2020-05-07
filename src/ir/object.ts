@@ -16,7 +16,7 @@ export class IRObject {
     readonly name: string
   ) {
     if (isRoot)
-      this.addField(new IRObjectField('uuid', IRType.Primitive('uuid')));
+      this.addField(new IRObjectField('uuid', IRType.Primitive('hash16')));
   }
 
   private getNextOffset(size: number, align: number = size): number {

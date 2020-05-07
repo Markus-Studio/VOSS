@@ -7,9 +7,9 @@ pub mod voss_runtime {
   use std::u8;
 
   #[derive(PartialEq, Copy, Clone)]
-  pub struct UUID([u8; 16]);
+  pub struct HASH16([u8; 16]);
 
-  impl std::fmt::Debug for UUID {
+  impl std::fmt::Debug for HASH16 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
       static CHARS: &'static [u8] = b"0123456789abcdef";
       let mut s = String::with_capacity(32);
@@ -23,10 +23,10 @@ pub mod voss_runtime {
     }
   }
 
-  impl UUID {
-    pub fn new(hash: &str) -> UUID {
+  impl HASH16 {
+    pub fn new(hash: &str) -> HASH16 {
       assert_eq!(hash.len(), 32);
-      UUID([
+      HASH16([
         u8::from_str_radix(&hash[0..2], 16).unwrap(),
         u8::from_str_radix(&hash[2..4], 16).unwrap(),
         u8::from_str_radix(&hash[4..6], 16).unwrap(),
@@ -240,7 +240,7 @@ pub mod voss_runtime {
     }
 
     #[inline]
-    pub fn uuid(&mut self, mut offset: usize, value: &UUID) -> Result<(), BuilderError> {
+    pub fn hash16(&mut self, mut offset: usize, value: &HASH16) -> Result<(), BuilderError> {
       self.bound_check(offset, 16)?;
       offset += self.current_offset;
       self.data[offset + 0] = value.0[0];
@@ -472,10 +472,10 @@ pub mod voss_runtime {
     }
 
     #[inline]
-    pub fn uuid(&self, mut offset: usize) -> Result<UUID, ReaderError> {
+    pub fn hash16(&self, mut offset: usize) -> Result<HASH16, ReaderError> {
       self.bound_check(offset, 16)?;
       offset += self.current_offset.borrow().clone();
-      Ok(UUID([
+      Ok(HASH16([
         self.data[offset + 0],
         self.data[offset + 1],
         self.data[offset + 2],

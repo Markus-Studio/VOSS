@@ -23,7 +23,7 @@ export interface ReadonlyLazyView<T> extends ReadonlyView<T> {
 export interface Builder {
   struct(offset: number, value: Struct): void;
   enum(offset: number, value: EnumCase): void;
-  uuid(offset: number, value: string): void;
+  hash16(offset: number, value: string): void;
   u8(offset: number, value: number): void;
   u16(offset: number, value: number): void;
   u32(offset: number, value: number): void;
@@ -44,7 +44,7 @@ export interface Reader {
     offset: number,
     map: Record<number, DeserializeFn<T>>
   ): EnumCase<number, T>;
-  uuid(offset: number): string;
+  hash16(offset: number): string;
   u8(offset: number): number;
   u16(offset: number): number;
   u32(offset: number): number;

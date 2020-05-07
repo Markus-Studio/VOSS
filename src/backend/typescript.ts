@@ -6,7 +6,7 @@ import { PrimitiveTypeName } from '../ir/type';
 import { IREnum } from '../ir/enum';
 
 const PRIMITIVE_TYPE: Record<PrimitiveTypeName, string> = {
-  uuid: 'UUID',
+  hash16: 'HASH16',
   i8: 'number',
   i16: 'number',
   i32: 'number',
@@ -33,7 +33,7 @@ export function generateTypescriptClient(program: Program): string {
   Struct,
   VossSessionBase,
 } from './runtime';\n\n`);
-  writer.write(`type UUID = string;\n`);
+  writer.write(`type HASH16 = string;\n`);
 
   program.getRPC();
 
@@ -198,7 +198,7 @@ function generateSerializeMethod(writer: PrettyWriter, object: IRObject): void {
     const name = 'this.data.' + toCamelCase(field.name);
     const offset = field.getOffset();
     const writeFn: string = field.type.isRootObject
-      ? 'uuid'
+      ? 'hash16'
       : field.type.isObject
       ? 'struct'
       : field.type.isEnum
@@ -228,7 +228,7 @@ function generateDeserializeMethod(
 function getDeserializeField(field: IRObjectField): string {
   const offset = field.getOffset();
   const readFn: string = field.type.isRootObject
-    ? 'uuid'
+    ? 'hash16'
     : field.type.isObject
     ? 'struct'
     : field.type.isEnum

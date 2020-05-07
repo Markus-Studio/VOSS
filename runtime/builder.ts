@@ -75,7 +75,7 @@ export class IBuilder implements Builder {
     this.struct(offset + 4, value.value);
   }
 
-  uuid(offset: number, value: string): void {
+  hash16(offset: number, value: string): void {
     if (value.length !== 32) throw new Error('UUID must be 32 characters.');
     offset += this.currentOffset;
     this.view.setUint32(offset + 0, parseInt(value.slice(0, 8), 16), false);

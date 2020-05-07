@@ -132,7 +132,7 @@ function buildSetFieldMessage(
   );
 
   const fieldType = field.type.isRootObject
-    ? program.resolveType('uuid')
+    ? program.resolveType('hash16')
     : field.type;
 
   messageData.addField(new IRObjectField('current', fieldType));
@@ -167,7 +167,7 @@ function buildFetchViewMessage(
   );
 
   messageData.addField(
-    new IRObjectField('hostUUID', program.resolveType('uuid'))
+    new IRObjectField('hostUUID', program.resolveType('hash16'))
   );
 
   program.addObject(messageData);
@@ -195,7 +195,9 @@ function buildDeleteMessage(program: Program): IREnumCase {
     new IRObjectField('timestamp', program.resolveType('f64'))
   );
 
-  messageData.addField(new IRObjectField('uuid', program.resolveType('uuid')));
+  messageData.addField(
+    new IRObjectField('uuid', program.resolveType('hash16'))
+  );
 
   program.addObject(messageData);
   return new IREnumCase(
@@ -218,7 +220,9 @@ function buildFetchByUUIDMessage(program: Program): IREnumCase {
     new IRObjectField('replyId', program.resolveType('u32'))
   );
 
-  messageData.addField(new IRObjectField('uuid', program.resolveType('uuid')));
+  messageData.addField(
+    new IRObjectField('uuid', program.resolveType('hash16'))
+  );
 
   program.addObject(messageData);
   return new IREnumCase(

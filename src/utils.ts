@@ -44,7 +44,7 @@ export function getObjectFieldPrivateType(
   }
 
   if (type.isRootObject) {
-    return map.uuid;
+    return map.hash16;
   }
 
   if (type.isEnum) {

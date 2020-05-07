@@ -63,7 +63,7 @@ export class IReader implements Reader {
     return { type, value };
   }
 
-  uuid(offset: number): string {
+  hash16(offset: number): string {
     this.boundCheck(offset, 16);
     offset += this.currentOffset;
     const p = (n: number) =>

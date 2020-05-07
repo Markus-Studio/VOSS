@@ -8,7 +8,7 @@ import { runtime } from './rust.runtime';
 import { IREnum } from '../ir/enum';
 
 const PRIMITIVE_TYPE: Record<PrimitiveTypeName, string> = {
-  uuid: 'voss_runtime::UUID',
+  hash16: 'voss_runtime::HASH16',
   i8: 'i8',
   i16: 'i16',
   i32: 'i32',
@@ -43,7 +43,7 @@ export function generateRustServer(program: Program): string {
 }
 
 function generateObjectStruct(writer: PrettyWriter, object: IRObject): void {
-  writer.write(`#[derive(Clone, Debug)]
+  writer.write(`#[derive(Clone, Debug, PartialEq)]
   pub struct ${toPascalCase(object.name)} {\n`);
   for (const field of object.getFields()) {
     writer.write(toSnakeCase(field.name) + ': ');
@@ -170,7 +170,7 @@ function generateObjectPropertyGetter(
 }
 
 function generateEnum(writer: PrettyWriter, oneof: IREnum) {
-  writer.write(`#[derive(Clone, Debug)]
+  writer.write(`#[derive(Clone, Debug, PartialEq)]
   pub enum ${toPascalCase(oneof.name)} {
     ${[...oneof.getCases()]
       .map((enumCase) => {
@@ -233,5 +233,5 @@ function generateEnumImplFromReader(writer: PrettyWriter, oneof: IREnum) {
 }
 
 function isRef(type: IRType): boolean {
-  return !(type.isPrimitive && type.name !== 'str' && type.name !== 'uuid');
+  return !(type.isPrimitive && type.name !== 'str' && type.name !== 'hash16');
 }
