@@ -5,7 +5,23 @@ import { Program } from './program';
 import { IRObject, IRObjectField, IRView } from './object';
 import { IREnum, IREnumCase } from './enum';
 
-const RESERVED_NAMES = new Set<string>(['uuid', 'ref', 'type', 'voss_session']);
+// prettier-ignore
+const RESERVED_NAMES = new Set<string>([
+  // VOSS Keywords.
+  'uuid', 'voss_session',
+  // JS Keywords.
+  'break', 'case', 'catch', 'continue', 'debugger', 'default', 'delete', 'do',
+  'else', 'finally', 'for', 'function', 'if', 'in', 'instanceof', 'new', 'with',
+  'return', 'switch', 'this', 'throw', 'try', 'typeof', 'var', 'void', 'while',
+  // Rust Keywords.
+  'as', 'use', 'extern', 'break', 'const', 'continue', 'crate', 'else', 'if',
+  'enum', 'extern', 'false', 'fn', 'for', 'if', 'impl', 'in', 'for', 'let',
+  'loop', 'match', 'mod', 'move', 'mut', 'pub', 'impl', 'ref', 'return', 'self',
+  'static', 'struct', 'super', 'trait', 'true', 'type', 'unsafe', 'use',
+  'where', 'while', 'abstract', 'alignof', 'become', 'box', 'do', 'final',
+  'macro', 'offsetof', 'override', 'priv', 'proc', 'pure', 'sizeof', 'typeof',
+  'unsized', 'virtual', 'yield',
+]);
 
 export function genIR(ast: AST.Root) {
   const declaration2id = new Map<AST.Declaration, number>();
