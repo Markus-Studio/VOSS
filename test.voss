@@ -5,6 +5,12 @@ object Point2D {
 
 object Circle {
   name: str;
+  group: Group;
   radius: f32;
   center: Point2D;
+}
+
+object Group {
+  name: str;
+  @View(Circle, group) circles;
 }

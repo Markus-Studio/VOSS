@@ -65,6 +65,12 @@ export function genIR(ast: AST.Root) {
     factory(program, id, declaration);
   }
 
+  for (const declaration of declarations) {
+    if (declaration.kind === AST.DeclarationKind.Object) {
+      genObjectView(program, declaration);
+    }
+  }
+
   return program;
 }
 
@@ -79,7 +85,10 @@ function genRootObject(
   for (const fieldDeclaration of declaration.members) {
     genField(program, object, fieldDeclaration);
   }
+}
 
+function genObjectView(program: Program, declaration: AST.ObjectDeclaration) {
+  const object = program.resolveObject(declaration.name)!;
   for (const viewDeclaration of declaration.views) {
     genView(program, object, viewDeclaration);
   }
