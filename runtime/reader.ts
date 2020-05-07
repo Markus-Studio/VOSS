@@ -74,6 +74,17 @@ export class IReader implements Reader {
     return p(0) + p(1) + p(2) + p(3);
   }
 
+  hash20(offset: number): string {
+    this.boundCheck(offset, 20);
+    offset += this.currentOffset;
+    const p = (n: number) =>
+      this.view
+        .getUint32(offset + n * 4, false)
+        .toString(16)
+        .padStart(8, '0');
+    return p(0) + p(1) + p(2) + p(3) + p(4);
+  }
+
   u8(offset: number): number {
     this.boundCheck(offset, 1);
     return this.view.getUint8(offset + this.currentOffset);

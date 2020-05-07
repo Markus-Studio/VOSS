@@ -76,12 +76,22 @@ export class IBuilder implements Builder {
   }
 
   hash16(offset: number, value: string): void {
-    if (value.length !== 32) throw new Error('UUID must be 32 characters.');
+    if (value.length !== 32) throw new Error('HASH16 must be 32 characters.');
     offset += this.currentOffset;
     this.view.setUint32(offset + 0, parseInt(value.slice(0, 8), 16), false);
     this.view.setUint32(offset + 4, parseInt(value.slice(8, 16), 16), false);
     this.view.setUint32(offset + 8, parseInt(value.slice(16, 24), 16), false);
     this.view.setUint32(offset + 12, parseInt(value.slice(24, 32), 16), false);
+  }
+
+  hash20(offset: number, value: string): void {
+    if (value.length !== 40) throw new Error('HASH20 must be 40 characters.');
+    offset += this.currentOffset;
+    this.view.setUint32(offset + 0, parseInt(value.slice(0, 8), 16), false);
+    this.view.setUint32(offset + 4, parseInt(value.slice(8, 16), 16), false);
+    this.view.setUint32(offset + 8, parseInt(value.slice(16, 24), 16), false);
+    this.view.setUint32(offset + 12, parseInt(value.slice(24, 32), 16), false);
+    this.view.setUint32(offset + 16, parseInt(value.slice(32, 40), 16), false);
   }
 
   u8(offset: number, value: number): void {

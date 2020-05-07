@@ -3,6 +3,7 @@ import { IREnum } from './enum';
 
 export type PrimitiveTypeName =
   | 'hash16'
+  | 'hash20'
   | 'i8'
   | 'i16'
   | 'i32'
@@ -19,6 +20,7 @@ const PrimitiveTypeSizeTable: Record<
   number | [number, number]
 > = Object.assign(Object.create(null), {
   hash16: [16, 1],
+  hash20: [20, 1],
   i8: 1,
   i16: 2,
   i32: 4,

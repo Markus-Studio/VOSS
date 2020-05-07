@@ -47,6 +47,51 @@ pub mod voss_runtime {
     }
   }
 
+  #[derive(PartialEq, Copy, Clone)]
+  pub struct HASH20([u8; 20]);
+
+  impl std::fmt::Debug for HASH20 {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+      static CHARS: &'static [u8] = b"0123456789abcdef";
+      let mut s = String::with_capacity(40);
+
+      for &byte in self.0.iter() {
+        s.write_char(CHARS[(byte >>  4) as usize].into())?;
+        s.write_char(CHARS[(byte & 0xf) as usize].into())?
+      }
+
+      f.write_str(&s)
+    }
+  }
+
+  impl HASH20 {
+    pub fn new(hash: &str) -> HASH20 {
+      assert_eq!(hash.len(), 40);
+      HASH20([
+        u8::from_str_radix(&hash[0..2], 16).unwrap(),
+        u8::from_str_radix(&hash[2..4], 16).unwrap(),
+        u8::from_str_radix(&hash[4..6], 16).unwrap(),
+        u8::from_str_radix(&hash[6..8], 16).unwrap(),
+        u8::from_str_radix(&hash[8..10], 16).unwrap(),
+        u8::from_str_radix(&hash[10..12], 16).unwrap(),
+        u8::from_str_radix(&hash[12..14], 16).unwrap(),
+        u8::from_str_radix(&hash[14..16], 16).unwrap(),
+        u8::from_str_radix(&hash[16..18], 16).unwrap(),
+        u8::from_str_radix(&hash[18..20], 16).unwrap(),
+        u8::from_str_radix(&hash[20..22], 16).unwrap(),
+        u8::from_str_radix(&hash[22..24], 16).unwrap(),
+        u8::from_str_radix(&hash[24..26], 16).unwrap(),
+        u8::from_str_radix(&hash[26..28], 16).unwrap(),
+        u8::from_str_radix(&hash[28..30], 16).unwrap(),
+        u8::from_str_radix(&hash[30..32], 16).unwrap(),
+        u8::from_str_radix(&hash[32..34], 16).unwrap(),
+        u8::from_str_radix(&hash[34..36], 16).unwrap(),
+        u8::from_str_radix(&hash[36..38], 16).unwrap(),
+        u8::from_str_radix(&hash[38..40], 16).unwrap(),
+      ])
+    }
+  }
+
   #[derive(Debug, Clone)]
   pub enum BuilderError {
     OutOfBound,
@@ -259,6 +304,33 @@ pub mod voss_runtime {
       self.data[offset + 13] = value.0[13];
       self.data[offset + 14] = value.0[14];
       self.data[offset + 15] = value.0[15];
+      Ok(())
+    }
+
+    #[inline]
+    pub fn hash20(&mut self, mut offset: usize, value: &HASH20) -> Result<(), BuilderError> {
+      self.bound_check(offset, 20)?;
+      offset += self.current_offset;
+      self.data[offset + 0] = value.0[0];
+      self.data[offset + 1] = value.0[1];
+      self.data[offset + 2] = value.0[2];
+      self.data[offset + 3] = value.0[3];
+      self.data[offset + 4] = value.0[4];
+      self.data[offset + 5] = value.0[5];
+      self.data[offset + 6] = value.0[6];
+      self.data[offset + 7] = value.0[7];
+      self.data[offset + 8] = value.0[8];
+      self.data[offset + 9] = value.0[9];
+      self.data[offset + 10] = value.0[10];
+      self.data[offset + 11] = value.0[11];
+      self.data[offset + 12] = value.0[12];
+      self.data[offset + 13] = value.0[13];
+      self.data[offset + 14] = value.0[14];
+      self.data[offset + 15] = value.0[15];
+      self.data[offset + 16] = value.0[16];
+      self.data[offset + 17] = value.0[17];
+      self.data[offset + 18] = value.0[18];
+      self.data[offset + 19] = value.0[19];
       Ok(())
     }
 
@@ -492,6 +564,34 @@ pub mod voss_runtime {
         self.data[offset + 13],
         self.data[offset + 14],
         self.data[offset + 15],
+      ]))
+    }
+
+    #[inline]
+    pub fn hash20(&self, mut offset: usize) -> Result<HASH20, ReaderError> {
+      self.bound_check(offset, 20)?;
+      offset += self.current_offset.borrow().clone();
+      Ok(HASH20([
+        self.data[offset + 0],
+        self.data[offset + 1],
+        self.data[offset + 2],
+        self.data[offset + 3],
+        self.data[offset + 4],
+        self.data[offset + 5],
+        self.data[offset + 6],
+        self.data[offset + 7],
+        self.data[offset + 8],
+        self.data[offset + 9],
+        self.data[offset + 10],
+        self.data[offset + 11],
+        self.data[offset + 12],
+        self.data[offset + 13],
+        self.data[offset + 14],
+        self.data[offset + 15],
+        self.data[offset + 16],
+        self.data[offset + 17],
+        self.data[offset + 18],
+        self.data[offset + 19],
       ]))
     }
 

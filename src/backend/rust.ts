@@ -9,6 +9,7 @@ import { IREnum } from '../ir/enum';
 
 const PRIMITIVE_TYPE: Record<PrimitiveTypeName, string> = {
   hash16: 'voss_runtime::HASH16',
+  hash20: 'voss_runtime::HASH20',
   i8: 'i8',
   i16: 'i16',
   i32: 'i32',
@@ -233,5 +234,10 @@ function generateEnumImplFromReader(writer: PrettyWriter, oneof: IREnum) {
 }
 
 function isRef(type: IRType): boolean {
-  return !(type.isPrimitive && type.name !== 'str' && type.name !== 'hash16');
+  return !(
+    type.isPrimitive &&
+    type.name !== 'str' &&
+    type.name !== 'hash16' &&
+    type.name !== 'hash20'
+  );
 }

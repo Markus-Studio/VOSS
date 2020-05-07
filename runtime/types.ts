@@ -24,6 +24,7 @@ export interface Builder {
   struct(offset: number, value: Struct): void;
   enum(offset: number, value: EnumCase): void;
   hash16(offset: number, value: string): void;
+  hash20(offset: number, value: string): void;
   u8(offset: number, value: number): void;
   u16(offset: number, value: number): void;
   u32(offset: number, value: number): void;
@@ -45,6 +46,7 @@ export interface Reader {
     map: Record<number, DeserializeFn<T>>
   ): EnumCase<number, T>;
   hash16(offset: number): string;
+  hash20(offset: number): string;
   u8(offset: number): number;
   u16(offset: number): number;
   u32(offset: number): number;
