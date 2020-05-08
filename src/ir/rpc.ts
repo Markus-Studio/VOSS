@@ -23,7 +23,7 @@ export enum InternalStructID {
 }
 
 export function buildRPC(program: Program): IREnum {
-  const rpcMessages = new IREnum(0, '_RPCMessage');
+  const rpcMessages = new IREnum(0, 'RPCMessage');
   const objects = [...program.getObjects()];
 
   rpcMessages.addCase(buildClockMessage(program));
@@ -63,11 +63,7 @@ function buildClockMessage(program: Program): IREnumCase {
   clockData.addField(
     new IRObjectField('timestamp', program.resolveType('f64'))
   );
-  return new IREnumCase(
-    'Clock',
-    clockData.getType(),
-    messageID
-  );
+  return new IREnumCase('Clock', clockData.getType(), messageID);
 }
 
 function buildReplyMessage(program: Program): IREnumCase {
@@ -80,26 +76,21 @@ function buildReplyMessage(program: Program): IREnumCase {
   messageData.addField(
     new IRObjectField('replyId', program.resolveType('u32'))
   );
-  return new IREnumCase(
-    'Reply',
-    messageData.getType(),
-    messageID
-  );
+  return new IREnumCase('Reply', messageData.getType(), messageID);
 }
 
 function buildRootFetchMessage(program: Program, object: IRObject): IREnumCase {
   const messageID = createUniqueID(RPCMessageCategory.RootFetch, object.id);
-  const caseName = 'FetchAll' + toPascalCase(object.name);
   const messageData = new IRObject(
     false,
     InternalStructID.ClockData,
-    `${caseName}Message`
+    object.rpcGetFetchAllMsg()
   );
   messageData.addField(
     new IRObjectField('replyId', program.resolveType('u32'))
   );
   return new IREnumCase(
-    caseName,
+    object.rpcGetFetchAllMsg(),
     messageData.getType(),
     messageID
   );
@@ -112,13 +103,10 @@ function buildSetFieldMessage(
 ): IREnumCase {
   const object = field.getOwner();
   const messageID = createUniqueID(RPCMessageCategory.ObjectSet, object.id, id);
-  const objectName = toPascalCase(object.name);
-  const fieldName = toPascalCase(field.name);
-  const caseName = 'Object' + objectName + 'Set' + fieldName;
   const messageData = new IRObject(
     false,
     InternalStructID.SetRequests,
-    `${caseName}Message`
+    field.rpcGetSetMsg()
   );
 
   messageData.addField(
@@ -140,7 +128,7 @@ function buildSetFieldMessage(
   messageData.addField(new IRObjectField('next', fieldType));
 
   return new IREnumCase(
-    caseName,
+    field.rpcGetSetCase(),
     messageData.getType(),
     messageID
   );
@@ -153,13 +141,10 @@ function buildFetchViewMessage(
 ): IREnumCase {
   const object = view.getHost();
   const messageID = createUniqueID(RPCMessageCategory.ViewFetch, object.id, id);
-  const objectName = toPascalCase(object.name);
-  const viewName = toPascalCase(view.name);
-  const caseName = 'FetchView' + objectName + '_' + viewName;
   const messageData = new IRObject(
     false,
     InternalStructID.FetchRequests,
-    `${caseName}Message`
+    view.rpcGetFetchMsg()
   );
 
   messageData.addField(
@@ -171,7 +156,7 @@ function buildFetchViewMessage(
   );
 
   return new IREnumCase(
-    caseName,
+    view.rpcGetFetchCase(),
     messageData.getType(),
     messageID
   );
@@ -179,11 +164,10 @@ function buildFetchViewMessage(
 
 function buildDeleteMessage(program: Program): IREnumCase {
   const messageID = createUniqueID(RPCMessageCategory.ObjectDelete, 0);
-  const caseName = 'Delete';
   const messageData = new IRObject(
     false,
     InternalStructID.FetchRequests,
-    `${caseName}Message`
+    `DeleteMessage`
   );
 
   messageData.addField(
@@ -198,11 +182,7 @@ function buildDeleteMessage(program: Program): IREnumCase {
     new IRObjectField('uuid', program.resolveType('hash16'))
   );
 
-  return new IREnumCase(
-    caseName,
-    messageData.getType(),
-    messageID
-  );
+  return new IREnumCase('Delete', messageData.getType(), messageID);
 }
 
 function buildFetchByUUIDMessage(program: Program): IREnumCase {
@@ -222,21 +202,15 @@ function buildFetchByUUIDMessage(program: Program): IREnumCase {
     new IRObjectField('uuid', program.resolveType('hash16'))
   );
 
-  return new IREnumCase(
-    caseName,
-    messageData.getType(),
-    messageID
-  );
+  return new IREnumCase(caseName, messageData.getType(), messageID);
 }
 
 function buildCreateMessage(program: Program, object: IRObject): IREnumCase {
   const messageID = createUniqueID(RPCMessageCategory.ObjectCreate, object.id);
-  const objectName = toPascalCase(object.name);
-  const caseName = 'Create' + objectName;
   const messageData = new IRObject(
     false,
     InternalStructID.FetchRequests,
-    `${caseName}Message`
+    object.rpcGetCreateMsg()
   );
 
   messageData.addField(
@@ -252,7 +226,7 @@ function buildCreateMessage(program: Program, object: IRObject): IREnumCase {
   }
 
   return new IREnumCase(
-    caseName,
+    object.rpcGetCreateCase(),
     messageData.getType(),
     messageID
   );

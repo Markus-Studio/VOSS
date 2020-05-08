@@ -42,7 +42,10 @@ export function generateRustServer(program: Program): string {
   return writer.getSource();
 }
 
-export function generateObjectStruct(writer: PrettyWriter, object: IRObject): void {
+export function generateObjectStruct(
+  writer: PrettyWriter,
+  object: IRObject
+): void {
   writer.write(`#[derive(Clone, Debug, PartialEq)]
   pub struct ${toPascalCase(object.name)} {\n`);
   for (const field of object.getFields()) {

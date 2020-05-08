@@ -1,12 +1,7 @@
 import { PrettyWriter } from './writer';
 import { Program } from '../ir/program';
 import { IRObject, IRObjectField } from '../ir/object';
-import {
-  toCamelCase,
-  toPascalCase,
-  getObjectFieldPrivateType,
-  flatten,
-} from '../utils';
+import { getObjectFieldPrivateType, flatten } from '../utils';
 import { PrimitiveTypeName } from '../ir/type';
 import { IREnum } from '../ir/enum';
 import * as pluralize from 'pluralize';
@@ -55,10 +50,10 @@ function generateObjectDataInterface(
   writer: PrettyWriter,
   object: IRObject
 ): void {
-  const name = toPascalCase(object.name) + '$Data';
+  const name = object.pascalCase + '$Data';
   writer.write(`export interface ${name} {\n`);
   for (const field of object.getFields()) {
-    writer.write(toCamelCase(field.name) + ': ');
+    writer.write(field.camelCase + ': ');
     writer.write(getObjectFieldPrivateType(PRIMITIVE_TYPE, field.type) + ',\n');
   }
   writer.write(`}\n`);
@@ -70,9 +65,9 @@ function generateObject(writer: PrettyWriter, object: IRObject): void {
   const maxAlign = object.getMaxElementAlignment();
 
   // Build the proper class deceleration.
-  const name = toPascalCase(object.name);
-  writer.write(`export class ${toPascalCase(object.name)} `);
-  if (object.isRoot) writer.write(`extends voss.ObjectBase<${name}$Data> `);
+  writer.write(`export class ${object.pascalCase} `);
+  if (object.isRoot)
+    writer.write(`extends voss.ObjectBase<${object.pascalCase}$Data> `);
   writer.write(`implements voss.Struct {\n`);
 
   // The data for the serialization.
@@ -103,7 +98,7 @@ function generateObjectClassConstructor(
   writer: PrettyWriter,
   object: IRObject
 ): void {
-  const dataInterfaceName = toPascalCase(object.name) + '$Data';
+  const dataInterfaceName = object.pascalCase + '$Data';
   writer.write(`constructor(protected data: ${dataInterfaceName}) {\n`);
   if (object.isRoot) {
     writer.write('super();\n');
@@ -115,16 +110,16 @@ function generateObjectPropertyGetter(
   writer: PrettyWriter,
   field: IRObjectField
 ): void {
-  const name = 'this.data.' + toCamelCase(field.name);
-  const fieldName = toPascalCase(field.name);
+  const name = 'this.data.' + field.camelCase;
+  const fieldName = field.pascalCase;
   if (field.type.isRootObject) {
-    const returnName = toPascalCase(field.type.asObject().name);
-    writer.write('fetch' + fieldName + '(session: VossSession):');
+    const returnName = field.type.asObject().pascalCase;
+    writer.write('fetch' + fieldName + '(session: RPC.VossSession):');
     writer.write(` Promise<${returnName} | undefined> {\n`);
     writer.write(`return session.fetchObjectByUUID(${name});\n`);
     writer.write('}\n');
   } else {
-    writer.write('get' + toPascalCase(field.name) + '() {\n');
+    writer.write('get' + field.pascalCase + '() {\n');
     writer.write(`return ${name};\n`);
     writer.write('}\n');
   }
@@ -137,25 +132,23 @@ function generateObjectPropertySetter(
   const object = field.getOwner();
   const valueType = field.type.isPrimitive
     ? PRIMITIVE_TYPE[field.type.asPrimitiveName()]
-    : toPascalCase(field.type.name);
+    : field.type.pascalCase;
   const valueGetter = field.type.isRootObject ? `.getUuid()` : '';
 
   if (object.isRoot) {
-    const fieldName = toPascalCase(field.name);
-    const objectName = toPascalCase(object.name);
-    const caseName = 'Object' + objectName + 'Set' + fieldName;
-    const req = '_' + caseName + 'Request';
     writer.write(`
-set${fieldName}(session: VossSession, value: ${valueType}): Promise<void> {
-  this.data.${toCamelCase(field.name)} = value${valueGetter};
+set${
+      field.pascalCase
+    }(session: RPC.VossSession, value: ${valueType}): Promise<void> {
+  this.data.${field.camelCase} = value${valueGetter};
   this.emitChange();
   return session.sendRequest((replyId, timestamp) => ({
-      type: _RPCMessage$Type.${caseName},
-      value: new ${req}({
+      type: RPC.RPCMessage$Type.${field.rpcGetSetCase()},
+      value: new RPC.${field.rpcGetSetMsg()}({
         replyId,
         timestamp,
         target: this.data.uuid,
-        current: this.data.${toCamelCase(field.name)},
+        current: this.data.${field.camelCase},
         next: value${valueGetter},
       })
   }));
@@ -164,20 +157,17 @@ set${fieldName}(session: VossSession, value: ${valueType}): Promise<void> {
   }
 
   writer.write(
-    `set${toPascalCase(field.name)}(value: ${valueType}): ${object.name} {\n`
+    `set${field.pascalCase}(value: ${valueType}): ${object.name} {\n`
   );
   writer.write(
-    `return new ${object.name}({...this.data, ${toCamelCase(
-      field.name
-    )}: value${valueGetter}});\n`
+    `return new ${object.pascalCase}({...this.data, ${field.camelCase}: value${valueGetter}});\n`
   );
   writer.write('}\n');
 }
 
 function generateEqualMethod(writer: PrettyWriter, object: IRObject): void {
-  const name = toPascalCase(object.name);
   const fields = [...object.getFields()];
-  writer.write(`equal(other: ${name}): boolean {
+  writer.write(`equal(other: ${object.pascalCase}): boolean {
     if (this.data === other.data) return true;
     return ${
       fields.length === 0
@@ -189,7 +179,7 @@ function generateEqualMethod(writer: PrettyWriter, object: IRObject): void {
               return 0;
             })
             .map((field) => {
-              const name = toCamelCase(field.name);
+              const name = field.camelCase;
               if (field.type.isPrimitive || field.type.isRootObject) {
                 return `this.data.${name} === other.data.${name}`;
               }
@@ -212,7 +202,7 @@ function generateEqualMethod(writer: PrettyWriter, object: IRObject): void {
 function generateSerializeMethod(writer: PrettyWriter, object: IRObject): void {
   writer.write('serialize(builder: voss.Builder) {\n');
   for (const field of object.getFields()) {
-    const name = 'this.data.' + toCamelCase(field.name);
+    const name = 'this.data.' + field.camelCase;
     const offset = field.getOffset();
     const writeFn: string = field.type.isRootObject
       ? 'hash16'
@@ -234,9 +224,7 @@ function generateDeserializeMethod(
   writer.write(`return new ${object.name}({\n`);
   writer.indent();
   for (const field of object.getFields()) {
-    writer.write(
-      toCamelCase(field.name) + ': ' + getDeserializeField(field) + ',\n'
-    );
+    writer.write(field.camelCase + ': ' + getDeserializeField(field) + ',\n');
   }
   writer.dedent();
   writer.write('});\n}\n');
@@ -301,13 +289,13 @@ function generateEnumDeserializer(writer: PrettyWriter, irEnum: IREnum): void {
 }
 
 function generateSessionClass(writer: PrettyWriter, program: Program): void {
-  writer.write(`export class VossSession extends voss.VossSessionBase<_RPCMessage> {
+  writer.write(`export class VossSession extends voss.VossSessionBase<RPCMessage> {
   protected objects = new Map<string, voss.ObjectBase<any>>();
-  protected deserializeMap = _RPCMessage$DeserializerMap;
+  protected deserializeMap = RPCMessage$DeserializerMap;
   ${[...program.getObjects()]
     .filter((obj) => obj.isRoot)
     .map((obj) => {
-      const name = 'viewAll' + pluralize(toPascalCase(obj.name));
+      const name = 'viewAll' + pluralize(obj.pascalCase);
       return `readonly ${name};`;
     })
     .join('\n')}
@@ -318,17 +306,17 @@ function generateSessionClass(writer: PrettyWriter, program: Program): void {
     }
 
     await this.sendRequest((replyId) => ({
-        type: _RPCMessage$Type.FetchByUUID,
-        value: new _FetchByUUIDRequest({ replyId, uuid }),
+        type: RPCMessage$Type.FetchByUUID,
+        value: new FetchByUUIDMessage({ replyId, uuid }),
     }));
 
     return this.objects.get(uuid);
   }
 
-  protected createClockRequest(timestamp: number): _RPCMessage {
+  protected createClockRequest(timestamp: number): RPCMessage {
     return {
-      type: _RPCMessage$Type.Clock,
-      value: new _ClockData({ timestamp }),
+      type: RPCMessage$Type.Clock,
+      value: new ClockMessage({ timestamp }),
     };
   }
 
@@ -340,29 +328,26 @@ function generateSessionClass(writer: PrettyWriter, program: Program): void {
     throw new Error('Cannot handle conflict.');
   }
 
-  protected onMessage(message: _RPCMessage): void {
+  protected onMessage(message: RPCMessage): void {
     switch (message.type) {
-      case _RPCMessage$Type.Reply:
+      case RPCMessage$Type.Reply:
         this.receivedReply(message.value.getReplyId());
         break;
-      case _RPCMessage$Type.Clock:
+      case RPCMessage$Type.Clock:
         this.receivedTime(message.value.getTimestamp());
         break;
       ${flatten(
         [...program.getObjects()]
           .filter((object) => object.isRoot)
           .map((object) => {
-            const objectName = toPascalCase(object.name);
+            const objectName = object.pascalCase;
             return [...object.getFields()]
               .filter((field) => field.name !== 'uuid')
               .map((field) => {
-                const fieldName = toPascalCase(field.name);
-                const caseName = 'Object' + objectName + 'Set' + fieldName;
-                const cf = toCamelCase(field.name);
-                return `case _RPCMessage$Type.${caseName}:
+                return `case RPCMessage$Type.${field.rpcGetSetCase()}:
               this.CAS(
                 message.value.getTarget(),
-                '${cf}',
+                '${field.camelCase}',
                 message.value.getCurrent(),
                 message.value.getNext()
               );

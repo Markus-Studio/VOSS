@@ -1,5 +1,7 @@
 import { IRObject } from './object';
 import { IREnum } from './enum';
+import memorize from 'memorize-decorator';
+import { toPascalCase, toCamelCase, toSnakeCase } from '../utils';
 
 export type PrimitiveTypeName =
   | 'hash16'
@@ -115,5 +117,20 @@ export class IRType {
 
   get isEnum(): boolean {
     return !!(this.target && this.target instanceof IREnum);
+  }
+
+  @memorize()
+  get pascalCase() {
+    return toPascalCase(this.name);
+  }
+
+  @memorize()
+  get camelCase() {
+    return toCamelCase(this.name);
+  }
+
+  @memorize()
+  get snakeCase() {
+    return toSnakeCase(this.name);
   }
 }

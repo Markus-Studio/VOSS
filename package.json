@@ -11,6 +11,7 @@
   "dependencies": {
     "antlr4ts": "^0.5.0-alpha.3",
     "lodash": "^4.17.15",
+    "memorize-decorator": "^0.2.2",
     "pluralize": "^8.0.0",
     "toposort": "^2.0.2"
   },

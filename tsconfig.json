@@ -5,6 +5,7 @@
     "strict": true,
     "sourceMap": true,
     "declaration": false,
+    "experimentalDecorators": true,
     "downlevelIteration": true,
     "module": "commonjs",
     "moduleResolution": "node",

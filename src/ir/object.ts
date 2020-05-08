@@ -1,6 +1,13 @@
 import { IRType } from './type';
-import { fastPow2Log2, nextNumberDivisibleByPowOfTwo } from '../utils';
+import {
+  fastPow2Log2,
+  nextNumberDivisibleByPowOfTwo,
+  toPascalCase,
+  toCamelCase,
+  toSnakeCase,
+} from '../utils';
 import { IRView } from './view';
+import memorize from 'memorize-decorator';
 
 export class IRObject {
   private fields = new Map<string, IRObjectField>();
@@ -124,7 +131,42 @@ export class IRObject {
   }
 
   getType(): IRType {
-      return IRType.Object(this);
+    return IRType.Object(this);
+  }
+
+  @memorize()
+  get pascalCase() {
+    return toPascalCase(this.name);
+  }
+
+  @memorize()
+  get camelCase() {
+    return toCamelCase(this.name);
+  }
+
+  @memorize()
+  get snakeCase() {
+    return toSnakeCase(this.name);
+  }
+
+  @memorize()
+  rpcGetCreateCase() {
+    return 'Create' + this.pascalCase;
+  }
+
+  @memorize()
+  rpcGetCreateMsg() {
+    return this.rpcGetCreateCase() + 'Message';
+  }
+
+  @memorize()
+  rpcGetFetchAllCase() {
+    return 'FetchAll' + this.pascalCase;
+  }
+
+  @memorize()
+  rpcGetFetchAllMsg() {
+    return this.rpcGetFetchAllCase() + 'Message';
   }
 }
 
@@ -179,5 +221,30 @@ export class IRObjectField {
 
   getSubjectedViews(): Iterable<IRView> {
     return this.subjectedViews.values();
+  }
+
+  @memorize()
+  get pascalCase() {
+    return toPascalCase(this.name);
+  }
+
+  @memorize()
+  get camelCase() {
+    return toCamelCase(this.name);
+  }
+
+  @memorize()
+  get snakeCase() {
+    return toSnakeCase(this.name);
+  }
+
+  @memorize()
+  rpcGetSetCase() {
+    return 'Object' + this.owner!.pascalCase + 'Set' + this.pascalCase;
+  }
+
+  @memorize()
+  rpcGetSetMsg() {
+    return this.rpcGetSetCase() + 'Message';
   }
 }

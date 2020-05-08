@@ -1,4 +1,6 @@
 import { IRObject, IRObjectField } from './object';
+import memorize from 'memorize-decorator';
+import { toPascalCase, toCamelCase, toSnakeCase } from '../utils';
 
 // object Host {
 //   @View(target, via) name;
@@ -29,5 +31,30 @@ export class IRView {
   getHost(): IRObject {
     if (!this.host) throw new Error('View is not attached yet.');
     return this.host;
+  }
+
+  @memorize()
+  get pascalCase() {
+    return toPascalCase(this.name);
+  }
+
+  @memorize()
+  get camelCase() {
+    return toCamelCase(this.name);
+  }
+
+  @memorize()
+  get snakeCase() {
+    return toSnakeCase(this.name);
+  }
+
+  @memorize()
+  rpcGetFetchCase() {
+    return 'Fetch' + this.host!.pascalCase + this.pascalCase;
+  }
+
+  @memorize()
+  rpcGetFetchMsg() {
+    return this.rpcGetFetchCase() + 'Message';
   }
 }
