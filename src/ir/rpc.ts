@@ -58,15 +58,14 @@ function buildClockMessage(program: Program): IREnumCase {
   const clockData = new IRObject(
     false,
     InternalStructID.ClockData,
-    '_ClockData'
+    'ClockMessage'
   );
   clockData.addField(
     new IRObjectField('timestamp', program.resolveType('f64'))
   );
-  program.addObject(clockData);
   return new IREnumCase(
     'Clock',
-    program.resolveType(clockData.name),
+    clockData.getType(),
     messageID
   );
 }
@@ -76,34 +75,32 @@ function buildReplyMessage(program: Program): IREnumCase {
   const messageData = new IRObject(
     false,
     InternalStructID.ClockData,
-    '_ReplyData'
+    'ReplyMessage'
   );
   messageData.addField(
     new IRObjectField('replyId', program.resolveType('u32'))
   );
-  program.addObject(messageData);
   return new IREnumCase(
     'Reply',
-    program.resolveType(messageData.name),
+    messageData.getType(),
     messageID
   );
 }
 
 function buildRootFetchMessage(program: Program, object: IRObject): IREnumCase {
   const messageID = createUniqueID(RPCMessageCategory.RootFetch, object.id);
-  const caseName = 'RootFetch' + toPascalCase(object.name);
+  const caseName = 'FetchAll' + toPascalCase(object.name);
   const messageData = new IRObject(
     false,
     InternalStructID.ClockData,
-    `_${caseName}Request`
+    `${caseName}Message`
   );
   messageData.addField(
     new IRObjectField('replyId', program.resolveType('u32'))
   );
-  program.addObject(messageData);
   return new IREnumCase(
     caseName,
-    program.resolveType(messageData.name),
+    messageData.getType(),
     messageID
   );
 }
@@ -121,7 +118,7 @@ function buildSetFieldMessage(
   const messageData = new IRObject(
     false,
     InternalStructID.SetRequests,
-    `_${caseName}Request`
+    `${caseName}Message`
   );
 
   messageData.addField(
@@ -142,10 +139,9 @@ function buildSetFieldMessage(
   messageData.addField(new IRObjectField('current', fieldType));
   messageData.addField(new IRObjectField('next', fieldType));
 
-  program.addObject(messageData);
   return new IREnumCase(
     caseName,
-    program.resolveType(messageData.name),
+    messageData.getType(),
     messageID
   );
 }
@@ -159,11 +155,11 @@ function buildFetchViewMessage(
   const messageID = createUniqueID(RPCMessageCategory.ViewFetch, object.id, id);
   const objectName = toPascalCase(object.name);
   const viewName = toPascalCase(view.name);
-  const caseName = 'Object' + objectName + 'Fetch' + viewName;
+  const caseName = 'FetchView' + objectName + '_' + viewName;
   const messageData = new IRObject(
     false,
     InternalStructID.FetchRequests,
-    `_${caseName}Request`
+    `${caseName}Message`
   );
 
   messageData.addField(
@@ -174,21 +170,20 @@ function buildFetchViewMessage(
     new IRObjectField('hostUUID', program.resolveType('hash16'))
   );
 
-  program.addObject(messageData);
   return new IREnumCase(
     caseName,
-    program.resolveType(messageData.name),
+    messageData.getType(),
     messageID
   );
 }
 
 function buildDeleteMessage(program: Program): IREnumCase {
   const messageID = createUniqueID(RPCMessageCategory.ObjectDelete, 0);
-  const caseName = 'ObjectDelete';
+  const caseName = 'Delete';
   const messageData = new IRObject(
     false,
     InternalStructID.FetchRequests,
-    `_${caseName}Request`
+    `${caseName}Message`
   );
 
   messageData.addField(
@@ -203,10 +198,9 @@ function buildDeleteMessage(program: Program): IREnumCase {
     new IRObjectField('uuid', program.resolveType('hash16'))
   );
 
-  program.addObject(messageData);
   return new IREnumCase(
     caseName,
-    program.resolveType(messageData.name),
+    messageData.getType(),
     messageID
   );
 }
@@ -217,7 +211,7 @@ function buildFetchByUUIDMessage(program: Program): IREnumCase {
   const messageData = new IRObject(
     false,
     InternalStructID.FetchRequests,
-    `_${caseName}Request`
+    `${caseName}Message`
   );
 
   messageData.addField(
@@ -228,10 +222,9 @@ function buildFetchByUUIDMessage(program: Program): IREnumCase {
     new IRObjectField('uuid', program.resolveType('hash16'))
   );
 
-  program.addObject(messageData);
   return new IREnumCase(
     caseName,
-    program.resolveType(messageData.name),
+    messageData.getType(),
     messageID
   );
 }
@@ -239,11 +232,11 @@ function buildFetchByUUIDMessage(program: Program): IREnumCase {
 function buildCreateMessage(program: Program, object: IRObject): IREnumCase {
   const messageID = createUniqueID(RPCMessageCategory.ObjectCreate, object.id);
   const objectName = toPascalCase(object.name);
-  const caseName = 'Object' + objectName + 'Create';
+  const caseName = 'Create' + objectName;
   const messageData = new IRObject(
     false,
     InternalStructID.FetchRequests,
-    `_${caseName}Request`
+    `${caseName}Message`
   );
 
   messageData.addField(
@@ -258,10 +251,9 @@ function buildCreateMessage(program: Program, object: IRObject): IREnumCase {
     messageData.addField(new IRObjectField(field.name, field.type));
   }
 
-  program.addObject(messageData);
   return new IREnumCase(
     caseName,
-    program.resolveType(messageData.name),
+    messageData.getType(),
     messageID
   );
 }

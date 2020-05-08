@@ -1,19 +1,29 @@
 import { PrettyWriter } from './writer';
 import { Program } from '../ir/program';
+import { generateObjectStruct, generateEnum } from './rust';
 
-export function generateVCS(writer: PrettyWriter, program: Program) {
-  writer.write('\npub mod voss_vcs {\n');
+export function generateRPC(writer: PrettyWriter, program: Program): void {
+  writer.write(`pub mod rpc {
+  use super::voss_runtime::{VossReader, VossBuilder};
+  use actix::{Actor, StreamHandler};
+  use actix_web_actors::ws;
+  use std::time::{SystemTime, UNIX_EPOCH};\n`);
+
+  const rpc = program.getRPC();
+
+  for (const message of rpc.getCases()) {
+    const object = message.type.asObject();
+    generateObjectStruct(writer, object);
+  }
+
+  generateEnum(writer, rpc);
   generateWebSocket(writer, program);
+
   writer.write('}\n');
 }
 
 function generateWebSocket(writer: PrettyWriter, program: Program) {
-  writer.write(`use super::_RPCMessage;
-  use super::voss_runtime::{VossReader, VossBuilder};
-  use actix::{Actor, StreamHandler};
-  use actix_web_actors::ws;
-  use std::time::{SystemTime, UNIX_EPOCH};
-
+  writer.write(`
   pub struct WebSocket;
 
   impl Actor for WebSocket {

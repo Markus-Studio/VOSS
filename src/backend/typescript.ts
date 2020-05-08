@@ -46,9 +46,7 @@ export function generateTypescriptClient(program: Program): string {
     generateEnum(writer, irEnum);
   }
 
-  generateEnum(writer, program.getRPC());
-
-  generateSessionClass(writer, program);
+  generateRPC(writer, program);
 
   return writer.getSource();
 }
@@ -376,4 +374,20 @@ function generateSessionClass(writer: PrettyWriter, program: Program): void {
   }
 }
 `);
+}
+
+function generateRPC(writer: PrettyWriter, program: Program): void {
+  writer.write('export namespace RPC {\n');
+
+  const rpc = program.getRPC();
+
+  for (const message of rpc.getCases()) {
+    const object = message.type.asObject();
+    generateObject(writer, object);
+  }
+
+  generateEnum(writer, rpc);
+  generateSessionClass(writer, program);
+
+  writer.write('}\n');
 }

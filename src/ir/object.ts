@@ -122,6 +122,10 @@ export class IRObject {
     this.ensureViewAccess();
     return this.subjectedViews.size > 0;
   }
+
+  getType(): IRType {
+      return IRType.Object(this);
+  }
 }
 
 export class IRObjectField {

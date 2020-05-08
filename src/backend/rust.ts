@@ -6,7 +6,7 @@ import { toSnakeCase, getObjectFieldPrivateType, toPascalCase } from '../utils';
 import { fastPow2Log2 } from '../../runtime/utils';
 import { runtime } from './rust.runtime';
 import { IREnum } from '../ir/enum';
-import { generateVCS } from './rust.vcs';
+import { generateRPC } from './rust.rpc';
 
 export const PRIMITIVE_TYPE: Record<PrimitiveTypeName, string> = {
   hash16: 'voss_runtime::HASH16',
@@ -29,8 +29,6 @@ export function generateRustServer(program: Program): string {
   writer.write('#![allow(dead_code)]\n');
   writer.write(runtime + '\n');
 
-  program.getRPC();
-
   for (const object of program.getObjects()) {
     generateObjectStruct(writer, object);
   }
@@ -39,14 +37,12 @@ export function generateRustServer(program: Program): string {
     generateEnum(writer, oneof);
   }
 
-  generateEnum(writer, program.getRPC());
-
-  generateVCS(writer, program);
+  generateRPC(writer, program);
 
   return writer.getSource();
 }
 
-function generateObjectStruct(writer: PrettyWriter, object: IRObject): void {
+export function generateObjectStruct(writer: PrettyWriter, object: IRObject): void {
   writer.write(`#[derive(Clone, Debug, PartialEq)]
   pub struct ${toPascalCase(object.name)} {\n`);
   for (const field of object.getFields()) {
@@ -173,7 +169,7 @@ function generateObjectPropertyGetter(
   }\n`);
 }
 
-function generateEnum(writer: PrettyWriter, oneof: IREnum) {
+export function generateEnum(writer: PrettyWriter, oneof: IREnum) {
   writer.write(`#[derive(Clone, Debug, PartialEq)]
   pub enum ${toPascalCase(oneof.name)} {
     ${[...oneof.getCases()]
