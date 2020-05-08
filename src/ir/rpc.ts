@@ -1,7 +1,8 @@
 import { IREnum, IREnumCase } from './enum';
 import { Program } from './program';
-import { IRObject, IRObjectField, IRView } from './object';
+import { IRObject, IRObjectField } from './object';
 import { toPascalCase } from '../utils';
+import { IRView } from './view';
 
 const enum RPCMessageCategory {
   Clock = 0,
