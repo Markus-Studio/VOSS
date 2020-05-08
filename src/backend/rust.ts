@@ -6,8 +6,9 @@ import { toSnakeCase, getObjectFieldPrivateType, toPascalCase } from '../utils';
 import { fastPow2Log2 } from '../../runtime/utils';
 import { runtime } from './rust.runtime';
 import { IREnum } from '../ir/enum';
+import { generateVCS } from './rust.vcs';
 
-const PRIMITIVE_TYPE: Record<PrimitiveTypeName, string> = {
+export const PRIMITIVE_TYPE: Record<PrimitiveTypeName, string> = {
   hash16: 'voss_runtime::HASH16',
   hash20: 'voss_runtime::HASH20',
   i8: 'i8',
@@ -39,6 +40,8 @@ export function generateRustServer(program: Program): string {
   }
 
   generateEnum(writer, program.getRPC());
+
+  generateVCS(writer, program);
 
   return writer.getSource();
 }

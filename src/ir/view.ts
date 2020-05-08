@@ -1,4 +1,3 @@
-
 import { IRObject, IRObjectField } from './object';
 
 // object Host {
