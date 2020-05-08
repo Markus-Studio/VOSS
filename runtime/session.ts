@@ -26,6 +26,7 @@ export abstract class VossSessionBase<T extends EnumCase> {
     this.onWSMessage = this.onWSMessage.bind(this);
     this.onWSEnd = this.onWSEnd.bind(this);
     this.onOnline = this.onOnline.bind(this);
+    this.now = this.now.bind(this);
     this.startWS();
   }
 
@@ -59,7 +60,7 @@ export abstract class VossSessionBase<T extends EnumCase> {
     if (!this.timeSyncIntervalHandle) {
       this.timeSyncIntervalHandle = setInterval(() => {
         this.syncClock();
-      }, 15e3);
+      }, 10e3);
     }
   }
 
@@ -88,7 +89,10 @@ export abstract class VossSessionBase<T extends EnumCase> {
       promise.reject(new Error(`Connected closed.`));
     this.pendingClockRequests = [];
 
+    clearInterval(this.timeSyncIntervalHandle);
     this.websocket = undefined;
+    this.timeSyncIntervalHandle = undefined;
+
     this.retry();
   }
 
@@ -130,11 +134,9 @@ export abstract class VossSessionBase<T extends EnumCase> {
     this.isClockSyncInProgress = true;
 
     try {
-      if (this.timeOffset === 0) {
-        // Compute one initial clock offset.
-        const offset = await this.requestClockOffset();
-        this.timeOffset = offset;
-      }
+      // Compute one initial clock offset.
+      const offset = await this.requestClockOffset(true);
+      this.timeOffset = offset;
 
       // Start 7 requests together.
       const offsets: number[] = await Promise.all([
@@ -150,7 +152,7 @@ export abstract class VossSessionBase<T extends EnumCase> {
       // Sort the numbers to compute the `mid`.
       offsets.sort();
 
-      const max = offsets[3] + stddev(offsets); // mid + stddev.
+      const max = offsets[(offsets.length - 1) / 2] + stddev(offsets); // mid + stddev.
       const finalOffset = mean(offsets.filter((n) => n < max));
       if (Number.isNaN(finalOffset) || !Number.isFinite(finalOffset)) return;
       this.timeOffset += finalOffset;
@@ -164,18 +166,19 @@ export abstract class VossSessionBase<T extends EnumCase> {
     }
   }
 
-  private async requestClockOffset(): Promise<number> {
+  private async requestClockOffset(first: boolean = false): Promise<number> {
     if (!this.websocket)
       throw new Error('WebSocket connection is not established yet.');
-    const request = this.createClockRequest(this.now());
+    const t = first ? Date.now : this.now;
+    const request = this.createClockRequest(t());
     const message = IBuilder.SerializeEnum(request).buffer;
     const promise = createResolvable<number>();
     this.pendingClockRequests.push(promise);
 
-    const localStart = this.now();
+    const localStart = t();
     this.websocket.send(message);
     const serverTime = await promise;
-    const latency = this.now() - localStart;
+    const latency = t() - localStart;
     return serverTime - (localStart + latency / 2);
   }
 
