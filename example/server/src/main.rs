@@ -3,7 +3,7 @@ use actix_web_actors::ws;
 mod voss;
 
 async fn index(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
-    let resp = ws::start(voss::voss_vcs::WebSocket {}, &req, stream);
+    let resp = ws::start(voss::rpc::WebSocket {}, &req, stream);
     println!("{:?}", resp);
     resp
 }

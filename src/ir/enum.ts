@@ -1,4 +1,6 @@
 import { IRType } from './type';
+import memorize from 'memorize-decorator';
+import { toPascalCase, toCamelCase, toSnakeCase } from '../utils';
 
 export class IREnum {
   private readonly cases = new Map<string, IREnumCase>();
@@ -33,6 +35,21 @@ export class IREnum {
   getCases(): Iterable<IREnumCase> {
     return this.cases.values();
   }
+
+  @memorize()
+  get pascalCase() {
+    return toPascalCase(this.name);
+  }
+
+  @memorize()
+  get camelCase() {
+    return toCamelCase(this.name);
+  }
+
+  @memorize()
+  get snakeCase() {
+    return toSnakeCase(this.name);
+  }
 }
 
 export class IREnumCase {
@@ -58,5 +75,20 @@ export class IREnumCase {
 
   isAttached(): boolean {
     return !!this.owner;
+  }
+
+  @memorize()
+  get pascalCase() {
+    return toPascalCase(this.name);
+  }
+
+  @memorize()
+  get camelCase() {
+    return toCamelCase(this.name);
+  }
+
+  @memorize()
+  get snakeCase() {
+    return toSnakeCase(this.name);
   }
 }

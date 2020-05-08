@@ -254,20 +254,20 @@ function generateEnum(writer: PrettyWriter, irEnum: IREnum): void {
 }
 
 function generateEnumTypeEnum(writer: PrettyWriter, irEnum: IREnum): void {
-  writer.write(`export const enum ${irEnum.name}$Type {\n`);
+  writer.write(`export const enum ${irEnum.pascalCase}$Type {\n`);
   for (const enumCase of irEnum.getCases()) {
-    writer.write(`${enumCase.name} = ${enumCase.value},\n`);
+    writer.write(`${enumCase.pascalCase} = ${enumCase.value},\n`);
   }
   writer.write('}\n');
 }
 
 function generateEnumCases(writer: PrettyWriter, irEnum: IREnum): void {
-  const typeEnumName = irEnum.name + '$Type';
-  writer.write(`export type ${irEnum.name} =\n`);
+  const typeEnumName = irEnum.pascalCase + '$Type';
+  writer.write(`export type ${irEnum.pascalCase} =\n`);
   writer.indent();
   for (const enumCase of irEnum.getCases()) {
     writer.write(
-      `| voss.EnumCase<${typeEnumName}.${enumCase.name}, ${enumCase.type.name}>\n`
+      `| voss.EnumCase<${typeEnumName}.${enumCase.pascalCase}, ${enumCase.type.pascalCase}>\n`
     );
   }
   writer.write(';\n');
@@ -275,14 +275,14 @@ function generateEnumCases(writer: PrettyWriter, irEnum: IREnum): void {
 }
 
 function generateEnumDeserializer(writer: PrettyWriter, irEnum: IREnum): void {
-  const constName = irEnum.name + '$DeserializerMap';
-  const typeEnumName = irEnum.name + '$Type';
+  const constName = irEnum.pascalCase + '$DeserializerMap';
+  const typeEnumName = irEnum.pascalCase + '$Type';
   writer.write(
     `export const ${constName}: Record<${typeEnumName}, voss.DeserializeFn<any>> = {\n`
   );
   for (const enumCase of irEnum.getCases()) {
     writer.write(
-      `[${typeEnumName}.${enumCase.name}]: ${enumCase.type.name}.deserialize,\n`
+      `[${typeEnumName}.${enumCase.pascalCase}]: ${enumCase.type.pascalCase}.deserialize,\n`
     );
   }
   writer.write('}\n');

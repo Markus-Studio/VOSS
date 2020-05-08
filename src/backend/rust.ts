@@ -2,8 +2,8 @@ import { Program } from '../ir/program';
 import { PrettyWriter } from './writer';
 import { PrimitiveTypeName, IRType } from '../ir/type';
 import { IRObject, IRObjectField } from '../ir/object';
-import { toSnakeCase, getObjectFieldPrivateType, toPascalCase } from '../utils';
-import { fastPow2Log2 } from '../../runtime/utils';
+import { getObjectFieldPrivateType } from '../utils';
+import { fastPow2Log2, enumEqual } from '../../runtime/utils';
 import { runtime } from './rust.runtime';
 import { IREnum } from '../ir/enum';
 import { generateRPC } from './rust.rpc';
@@ -44,26 +44,27 @@ export function generateRustServer(program: Program): string {
 
 export function generateObjectStruct(
   writer: PrettyWriter,
-  object: IRObject
+  object: IRObject,
+  inRPC = false
 ): void {
   writer.write(`#[derive(Clone, Debug, PartialEq)]
-  pub struct ${toPascalCase(object.name)} {\n`);
+  pub struct ${object.pascalCase} {\n`);
   for (const field of object.getFields()) {
-    writer.write(toSnakeCase(field.name) + ': ');
+    writer.write(field.snakeCase + ': ');
     writer.write(getObjectFieldPrivateType(PRIMITIVE_TYPE, field.type) + ',\n');
   }
   writer.write(`}\n`);
 
   generateObjectImplVossStruct(writer, object);
   generateObjectImplFromReader(writer, object);
-  generateObjectImpl(writer, object);
+  generateObjectImpl(writer, object, inRPC);
 }
 
 function generateObjectImplVossStruct(
   writer: PrettyWriter,
   object: IRObject
 ): void {
-  const name = toPascalCase(object.name);
+  const name = object.pascalCase;
   writer.write(`impl voss_runtime::VossStruct for ${name} {
     fn alignment_pow2(&self) -> usize {
         ${fastPow2Log2(object.getMaxElementAlignment())}
@@ -79,7 +80,7 @@ function generateObjectImplVossStruct(
     ) -> Result<(), voss_runtime::BuilderError> {
         ${[...object.getFields()]
           .map((field) => {
-            let uri = 'self.' + toSnakeCase(field.name);
+            let uri = 'self.' + field.snakeCase;
             const offset = field.getOffset();
             const writeFn: string = field.type.isRootObject
               ? 'hash16'
@@ -101,18 +102,18 @@ function generateObjectImplFromReader(
   writer: PrettyWriter,
   object: IRObject
 ): void {
-  const name = toPascalCase(object.name);
+  const name = object.pascalCase;
   writer.write(`impl voss_runtime::FromReader for ${name} {
       fn from_reader(reader: &voss_runtime::VossReader) -> Result<Self, voss_runtime::ReaderError> {
         Ok(${name} {
         ${[...object.getFields()]
           .map((field) => {
-            const uri = toSnakeCase(field.name);
+            const uri = field.snakeCase;
             const offset = field.getOffset();
             const writeFn: string = field.type.isRootObject
               ? 'hash16'
               : field.type.isObject
-              ? `object::<${toPascalCase(field.type.name)}>`
+              ? `object::<${field.type.pascalCase}>`
               : field.type.isEnum
               ? 'oneof'
               : field.type.asPrimitiveName();
@@ -124,8 +125,12 @@ function generateObjectImplFromReader(
   }\n`);
 }
 
-function generateObjectImpl(writer: PrettyWriter, object: IRObject) {
-  const name = toPascalCase(object.name);
+function generateObjectImpl(
+  writer: PrettyWriter,
+  object: IRObject,
+  inRPC: boolean
+) {
+  const name = object.pascalCase;
   writer.write(`impl ${name} {
     pub fn new(
       ${[...object.getFields()]
@@ -133,16 +138,16 @@ function generateObjectImpl(writer: PrettyWriter, object: IRObject) {
           let type = field.type.isPrimitive
             ? PRIMITIVE_TYPE[field.type.asPrimitiveName()]
             : field.type.isRootObject
-            ? `&${toPascalCase(field.type.name)}`
-            : toPascalCase(field.type.name);
-          return `${toSnakeCase(field.name)}: ${type},`;
+            ? `&${inRPC ? 'super::' : ''}${field.type.pascalCase}`
+            : field.type.pascalCase;
+          return `${field.snakeCase}: ${type},`;
         })
         .join('\n')}
     ) -> ${name} {
       ${name} {
         ${[...object.getFields()]
           .map((field) => {
-            let name = toSnakeCase(field.name);
+            let name = field.snakeCase;
             let uri = field.type.isRootObject ? `*${name}.get_uuid()` : '';
             return uri ? `${name}: ${uri},` : `${name},`;
           })
@@ -164,22 +169,22 @@ function generateObjectPropertyGetter(
   writer: PrettyWriter,
   field: IRObjectField
 ) {
-  const name = toSnakeCase('get-' + field.name);
+  const name = field.snakeCase.startsWith('_')
+    ? '_get' + field.snakeCase
+    : 'get_' + field.snakeCase;
   const type = getObjectFieldPrivateType(PRIMITIVE_TYPE, field.type);
   const ref = isRef(field.type) ? '&' : '';
   writer.write(`pub fn ${name}(&self) -> ${ref}${type} {
-    ${ref}self.${toSnakeCase(field.name)}
+    ${ref}self.${field.snakeCase}
   }\n`);
 }
 
 export function generateEnum(writer: PrettyWriter, oneof: IREnum) {
   writer.write(`#[derive(Clone, Debug, PartialEq)]
-  pub enum ${toPascalCase(oneof.name)} {
+  pub enum ${oneof.pascalCase} {
     ${[...oneof.getCases()]
       .map((enumCase) => {
-        const caseName = toPascalCase(enumCase.name);
-        const typeName = toPascalCase(enumCase.type.name);
-        return `${caseName}(${typeName}),`;
+        return `${enumCase.pascalCase}(${enumCase.type.pascalCase}),`;
       })
       .join('\n')}
   }\n`);
@@ -189,15 +194,14 @@ export function generateEnum(writer: PrettyWriter, oneof: IREnum) {
 }
 
 function generateEnumImplVossEnum(writer: PrettyWriter, oneof: IREnum) {
-  const name = toPascalCase(oneof.name);
+  const name = oneof.pascalCase;
   writer.write(`impl<'a> voss_runtime::VossEnum<'a> for ${name} {
     fn get_type(&self) -> u32 {
       match &self {
         ${[...oneof.getCases()]
           .map((enumCase) => {
-            const caseName = toPascalCase(enumCase.name);
             const caseTag = enumCase.value;
-            return `${name}::${caseName}(_) => ${caseTag},`;
+            return `${name}::${enumCase.pascalCase}(_) => ${caseTag},`;
           })
           .join('\n')}
       }
@@ -207,8 +211,7 @@ function generateEnumImplVossEnum(writer: PrettyWriter, oneof: IREnum) {
       match &self {
         ${[...oneof.getCases()]
           .map((enumCase) => {
-            const caseName = toPascalCase(enumCase.name);
-            return `${name}::${caseName}(v) => v,`;
+            return `${name}::${enumCase.pascalCase}(v) => v,`;
           })
           .join('\n')}
       }
@@ -217,15 +220,15 @@ function generateEnumImplVossEnum(writer: PrettyWriter, oneof: IREnum) {
 }
 
 function generateEnumImplFromReader(writer: PrettyWriter, oneof: IREnum) {
-  const name = toPascalCase(oneof.name);
+  const name = oneof.pascalCase;
   writer.write(`impl voss_runtime::FromReader for ${name} {
     fn from_reader(reader: &voss_runtime::VossReader) -> Result<Self, voss_runtime::ReaderError> {
       match reader.u32(0)? {
         ${[...oneof.getCases()]
           .map((enumCase) => {
-            const caseName = toPascalCase(enumCase.name);
+            const caseName = enumCase.pascalCase;
             const caseTag = enumCase.value;
-            const typeName = toPascalCase(enumCase.type.name);
+            const typeName = enumCase.type.pascalCase;
             return `${caseTag} => Ok(${name}::${caseName}(reader.object::<${typeName}>(4)?)),`;
           })
           .join('\n')}

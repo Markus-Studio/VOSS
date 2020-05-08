@@ -5,6 +5,7 @@ import { generateObjectStruct, generateEnum } from './rust';
 export function generateRPC(writer: PrettyWriter, program: Program): void {
   writer.write(`pub mod rpc {
   use super::voss_runtime::{VossReader, VossBuilder};
+  use super::voss_runtime;
   use actix::{Actor, StreamHandler};
   use actix_web_actors::ws;
   use std::time::{SystemTime, UNIX_EPOCH};\n`);
@@ -13,7 +14,7 @@ export function generateRPC(writer: PrettyWriter, program: Program): void {
 
   for (const message of rpc.getCases()) {
     const object = message.type.asObject();
-    generateObjectStruct(writer, object);
+    generateObjectStruct(writer, object, true);
   }
 
   generateEnum(writer, rpc);
@@ -34,7 +35,7 @@ function generateWebSocket(writer: PrettyWriter, program: Program) {
     fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
       match msg {
         Ok(ws::Message::Ping(bin)) => {
-          match &VossReader::deserialize_enum::<_RPCMessage>(&bin) {
+          match &VossReader::deserialize_enum::<RPCMessage>(&bin) {
             Ok(msg) => self.handle_rpc_message(msg, ctx),
             Err(_) => {}
           }
@@ -48,10 +49,10 @@ function generateWebSocket(writer: PrettyWriter, program: Program) {
 
   impl WebSocket {
     #[inline(always)]
-    fn handle_rpc_message(&mut self, msg: &_RPCMessage, ctx: &mut ws::WebsocketContext<Self>) {
+    fn handle_rpc_message(&mut self, msg: &RPCMessage, ctx: &mut ws::WebsocketContext<Self>) {
       match msg {
-        _RPCMessage::Clock(_) => {
-          let result= _RPCMessage::Clock(super::_ClockData::new(now()));
+        RPCMessage::Clock(_) => {
+          let result = RPCMessage::Clock(ClockMessage::new(now()));
           ctx.binary(VossBuilder::serialize_enum(&result).unwrap());
         }
         _ => unimplemented!()
