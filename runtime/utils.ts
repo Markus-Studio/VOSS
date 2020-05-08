@@ -59,3 +59,7 @@ export function createResolvable<T>(): Resolvable<T> {
 export function enumEqual(a: EnumCase, b: EnumCase): boolean {
   return a.type === b.type && a.value.equal(b.value);
 }
+
+export function delay(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(() => r(), ms));
+}

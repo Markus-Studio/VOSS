@@ -296,7 +296,7 @@ function generateSessionClass(writer: PrettyWriter, program: Program): void {
     .filter((obj) => obj.isRoot)
     .map((obj) => {
       const name = 'viewAll' + pluralize(obj.pascalCase);
-      return `readonly ${name};`;
+      return `readonly ${name}: any;`;
     })
     .join('\n')}
 

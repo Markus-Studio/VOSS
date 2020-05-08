@@ -1,4 +1,4 @@
-import { Resolvable, createResolvable, stddev, mean } from './utils';
+import { Resolvable, createResolvable, stddev, mean, delay } from './utils';
 import { IBuilder } from './builder';
 import { EnumCase, DeserializeFn, Struct } from './types';
 import { IReader } from './reader';
@@ -18,6 +18,7 @@ export abstract class VossSessionBase<T extends EnumCase> {
   private replyIdCounter = 0;
   private isClosed = false;
   private failedTry = 0;
+  private retryInProgress = false;
   protected abstract deserializeMap: Record<number, DeserializeFn<Struct>>;
 
   constructor(readonly server: string) {
@@ -29,16 +30,11 @@ export abstract class VossSessionBase<T extends EnumCase> {
   }
 
   private startWS() {
-    if (this.websocket || this.isClosed) return;
+    if (this.websocket || this.isClosed)
+      throw new Error('Connection is still present.');
 
-    if ('navigator' in window && 'onLine' in navigator) {
-      if (!navigator.onLine) {
-        window.addEventListener('online', this.onOnline);
-        return;
-      }
-    }
-
-    this.websocket = new WebSocket(this.server, 'VOSS');
+    console.info('(VOSS) Connecting...');
+    this.websocket = new WebSocket(this.server);
     this.websocket.binaryType = 'arraybuffer';
     this.websocket.onopen = this.onWSOpen;
     this.websocket.onmessage = this.onWSMessage;
@@ -47,6 +43,7 @@ export abstract class VossSessionBase<T extends EnumCase> {
   }
 
   private onWSOpen() {
+    console.info('(VOSS) Connected.');
     this.failedTry = 0;
 
     try {
@@ -84,7 +81,7 @@ export abstract class VossSessionBase<T extends EnumCase> {
 
   private onWSEnd() {
     if (!this.websocket) return;
-    this.failedTry += 1;
+    console.info('(VOSS) Disconnected.');
 
     // Reject all the ongoing clock requests.
     for (const promise of this.pendingClockRequests)
@@ -92,23 +89,40 @@ export abstract class VossSessionBase<T extends EnumCase> {
     this.pendingClockRequests = [];
 
     this.websocket = undefined;
-
-    if ('navigator' in window && 'onLine' in navigator) {
-      this.startWS();
-    } else {
-      if (this.failedTry === 0) {
-        this.startWS();
-      } else {
-        setTimeout(() => {
-          this.startWS();
-        }, 500);
-      }
-    }
+    this.retry();
   }
 
   private onOnline() {
-    this.startWS();
     window.removeEventListener('online', this.onOnline);
+    this.startWS();
+  }
+
+  async retry() {
+    if (this.retryInProgress)
+      throw new Error('Another retry task is still in progress.');
+
+    if (this.websocket || this.isClosed) return;
+
+    try {
+      this.failedTry += 1;
+      if (this.failedTry === 7) this.failedTry = 1;
+      this.retryInProgress = true;
+
+      if ('navigator' in window && 'onLine' in navigator) {
+        if (!navigator.onLine) {
+          console.info('(VOSS) Detected Offline Network, Retry When Online.');
+          window.addEventListener('online', this.onOnline);
+          return;
+        }
+      }
+
+      const wait = 500 * 2 ** (this.failedTry - 1);
+      console.info(`(VOSS) Retry in ${wait}ms.`);
+      await delay(wait);
+      this.startWS();
+    } finally {
+      this.retryInProgress = false;
+    }
   }
 
   private async syncClock() {
@@ -138,11 +152,13 @@ export abstract class VossSessionBase<T extends EnumCase> {
 
       const max = offsets[3] + stddev(offsets); // mid + stddev.
       const finalOffset = mean(offsets.filter((n) => n < max));
+      if (Number.isNaN(finalOffset) || !Number.isFinite(finalOffset)) return;
       this.timeOffset += finalOffset;
 
       const t = this.now();
       const o = this.timeOffset;
-      console.info(`(VOSS) Server time: ${t} (offset: ${o}ms)`);
+      const d = new Date(t);
+      console.info(`(VOSS) Server time: ${d} (offset: ${o}ms)`);
     } finally {
       this.isClockSyncInProgress = false;
     }
