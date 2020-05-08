@@ -355,19 +355,21 @@ function generateSessionClass(writer: PrettyWriter, program: Program): void {
           .filter((object) => object.isRoot)
           .map((object) => {
             const objectName = toPascalCase(object.name);
-            return [...object.getFields()].filter(field => field.name !== 'uuid').map((field) => {
-              const fieldName = toPascalCase(field.name);
-              const caseName = 'Object' + objectName + 'Set' + fieldName;
-              const cf = toCamelCase(field.name);
-              return `case _RPCMessage$Type.${caseName}:
+            return [...object.getFields()]
+              .filter((field) => field.name !== 'uuid')
+              .map((field) => {
+                const fieldName = toPascalCase(field.name);
+                const caseName = 'Object' + objectName + 'Set' + fieldName;
+                const cf = toCamelCase(field.name);
+                return `case _RPCMessage$Type.${caseName}:
               this.CAS(
                 message.value.getTarget(),
                 '${cf}',
                 message.value.getCurrent(),
                 message.value.getNext()
               );
-              break;`
-            });
+              break;`;
+              });
           })
       ).join('\n')}
     }

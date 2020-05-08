@@ -660,6 +660,24 @@ pub mod voss_runtime {
       self.current_offset.replace(old_offset);
       result
     }
+
+    #[inline]
+    pub fn deserialize_struct<T: FromReader>(buffer: &'a [u8]) -> Result<T, ReaderError> {
+      let reader = VossReader {
+        current_offset: RefCell::new(0),
+        data: buffer
+      };
+      T::from_reader(&reader)
+    }
+
+    #[inline]
+    pub fn deserialize_enum<T: FromReader>(buffer: &'a [u8]) -> Result<T, ReaderError> {
+      let reader = VossReader {
+        current_offset: RefCell::new(0),
+        data: buffer
+      };
+      reader.oneof(0)
+    }
   }
 
   impl<'a> From<&'a Vec<u8>> for VossReader<'a> {

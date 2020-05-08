@@ -80,7 +80,7 @@ function generateObjectImplVossStruct(
             let uri = 'self.' + toSnakeCase(field.name);
             const offset = field.getOffset();
             const writeFn: string = field.type.isRootObject
-              ? 'uuid'
+              ? 'hash16'
               : field.type.isObject
               ? 'object'
               : field.type.isEnum
@@ -108,7 +108,7 @@ function generateObjectImplFromReader(
             const uri = toSnakeCase(field.name);
             const offset = field.getOffset();
             const writeFn: string = field.type.isRootObject
-              ? 'uuid'
+              ? 'hash16'
               : field.type.isObject
               ? `object::<${toPascalCase(field.type.name)}>`
               : field.type.isEnum
