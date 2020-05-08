@@ -6,9 +6,12 @@ export function generateRPC(writer: PrettyWriter, program: Program): void {
   writer.write(`pub mod rpc {
   use super::voss_runtime::{VossReader, VossBuilder};
   use super::voss_runtime;
-  use actix::{Actor, StreamHandler};
+  use actix::*;
   use actix_web_actors::ws;
-  use std::time::{SystemTime, UNIX_EPOCH};\n`);
+  use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+  
+  const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
+  const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);\n`);
 
   const rpc = program.getRPC();
 
@@ -25,38 +28,82 @@ export function generateRPC(writer: PrettyWriter, program: Program): void {
 
 function generateWebSocket(writer: PrettyWriter, program: Program) {
   writer.write(`
-  pub struct WebSocket;
-
-  impl Actor for WebSocket {
-    type Context = ws::WebsocketContext<Self>;
+  pub struct WsSession {
+    hb: Instant,
   }
 
-  impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocket {
-    fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
-      match msg {
-        Ok(ws::Message::Ping(bin)) => {
-          match &VossReader::deserialize_enum::<RPCMessage>(&bin) {
-            Ok(msg) => self.handle_rpc_message(msg, ctx),
-            Err(_) => {}
-          }
-        }
-        Ok(ws::Message::Text(text)) => ctx.text(text),
-        Ok(ws::Message::Binary(bin)) => ctx.binary(bin),
-        _ => (),
-      }
+  impl Actor for WsSession {
+    type Context = ws::WebsocketContext<Self>;
+
+    fn started(&mut self, ctx: &mut Self::Context) {
+      // Start sending heartbeat messages.
+      self.hb(ctx);
+    }
+
+    fn stopping(&mut self, _: &mut Self::Context) -> Running {
+      Running::Stop
     }
   }
 
-  impl WebSocket {
-    #[inline(always)]
-    fn handle_rpc_message(&mut self, msg: &RPCMessage, ctx: &mut ws::WebsocketContext<Self>) {
-      match msg {
-        RPCMessage::Clock(_) => {
-          let result = RPCMessage::Clock(ClockMessage::new(now()));
-          ctx.binary(VossBuilder::serialize_enum(&result).unwrap());
-        }
-        _ => unimplemented!()
+  impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsSession {
+      fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
+          let msg = match msg {
+              Err(_) => {
+                  ctx.close(None);
+                  return;
+              }
+              Ok(msg) => msg,
+          };
+
+          let msg = match msg {
+              ws::Message::Ping(msg) => {
+                self.hb = Instant::now();
+                ctx.pong(&msg);
+                return;
+              },
+              ws::Message::Pong(_) => {
+                self.hb = Instant::now();
+                return;
+              },
+              ws::Message::Close(_) | ws::Message::Continuation(_) | ws::Message::Text(_) => {
+                ctx.close(None);
+                return;
+              },
+              ws::Message::Binary(bin) => match VossReader::deserialize_enum::<RPCMessage>(&bin) {
+                Ok(msg) => msg,
+                Err(_) => {
+                    ctx.close(None);
+                    return;
+                }
+              },
+              ws::Message::Nop => return,
+          };
+
+          match msg {
+            RPCMessage::Clock(_) => {
+              let result = RPCMessage::Clock(ClockMessage::new(now()));
+              ctx.binary(VossBuilder::serialize_enum(&result).unwrap());
+            },
+            _ => unimplemented!()
+          }
       }
+  }
+
+  impl WsSession {
+    pub fn new() -> WsSession {
+      WsSession {
+        hb: Instant::now()
+      }
+    }
+
+    fn hb(&self, ctx: &mut ws::WebsocketContext<Self>) {
+      ctx.run_interval(HEARTBEAT_INTERVAL, |act, ctx| {
+        if Instant::now().duration_since(act.hb) > CLIENT_TIMEOUT {
+            ctx.stop();
+            return;
+        }
+        ctx.ping(b"");
+      });
     }
   }
 
