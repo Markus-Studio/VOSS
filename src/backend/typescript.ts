@@ -290,6 +290,7 @@ function generateEnumDeserializer(writer: PrettyWriter, irEnum: IREnum): void {
 
 function generateSessionClass(writer: PrettyWriter, program: Program): void {
   writer.write(`export class VossSession extends voss.VossSessionBase<RPCMessage> {
+  protected hostID?: number;
   protected objects = new Map<string, voss.ObjectBase<any>>();
   protected deserializeMap = RPCMessage$DeserializerMap;
   ${[...program.getObjects()]
@@ -320,6 +321,11 @@ function generateSessionClass(writer: PrettyWriter, program: Program): void {
     };
   }
 
+  protected getHostId(): number {
+    if (this.hostID === undefined) throw new Error('Host ID is not yet initialized.');
+    return this.hostID;
+  }
+
   protected CAS(uuid: string, field: string, current: any, next: any): void {
     const object = this.objects.get(uuid);
     if (!object) return;
@@ -335,6 +341,9 @@ function generateSessionClass(writer: PrettyWriter, program: Program): void {
         break;
       case RPCMessage$Type.Clock:
         this.receivedTime(message.value.getTimestamp());
+        break;
+      case RPCMessage$Type.HostID:
+        this.hostID = message.value.getValue();
         break;
       ${flatten(
         [...program.getObjects()]

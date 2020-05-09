@@ -20,8 +20,12 @@ export enum InternalStructID {
   ClockData = 0,
   ReplyData = 1,
   HostID = 2,
-  SetRequests = 3,
-  FetchRequests = 4,
+  SetField = 3,
+  RootFetch = 4,
+  FetchView = 5,
+  Delete = 6,
+  Create = 7,
+  FetchByUUID = 8,
 }
 
 export function buildRPC(program: Program): IREnum {
@@ -73,7 +77,7 @@ function buildReplyMessage(program: Program): IREnumCase {
   const messageID = u32FromBytesVecLE([RPCMessageCategory.Reply, 0, 0, 0]);
   const messageData = new IRObject(
     false,
-    InternalStructID.ClockData,
+    InternalStructID.ReplyData,
     'ReplyMessage'
   );
   messageData.addField(
@@ -83,13 +87,13 @@ function buildReplyMessage(program: Program): IREnumCase {
 }
 
 function buildHostIdMessage(program: Program): IREnumCase {
-  const messageID = u32FromBytesVecLE([RPCMessageCategory.Reply, 0, 0, 0]);
+  const messageID = u32FromBytesVecLE([RPCMessageCategory.HostID, 0, 0, 0]);
   const messageData = new IRObject(
     false,
-    InternalStructID.ClockData,
+    InternalStructID.HostID,
     'HostIDMessage'
   );
-  messageData.addField(new IRObjectField('hash', program.resolveType('u32')));
+  messageData.addField(new IRObjectField('value', program.resolveType('u32')));
   return new IREnumCase('HostID', messageData.getType(), messageID);
 }
 
@@ -97,7 +101,7 @@ function buildRootFetchMessage(program: Program, object: IRObject): IREnumCase {
   const messageID = createUniqueID(RPCMessageCategory.RootFetch, object.id);
   const messageData = new IRObject(
     false,
-    InternalStructID.ClockData,
+    InternalStructID.RootFetch,
     object.rpcGetFetchAllMsg()
   );
   messageData.addField(
@@ -119,7 +123,7 @@ function buildSetFieldMessage(
   const messageID = createUniqueID(RPCMessageCategory.ObjectSet, object.id, id);
   const messageData = new IRObject(
     false,
-    InternalStructID.SetRequests,
+    InternalStructID.SetField,
     field.rpcGetSetMsg()
   );
 
@@ -157,7 +161,7 @@ function buildFetchViewMessage(
   const messageID = createUniqueID(RPCMessageCategory.ViewFetch, object.id, id);
   const messageData = new IRObject(
     false,
-    InternalStructID.FetchRequests,
+    InternalStructID.FetchView,
     view.rpcGetFetchMsg()
   );
 
@@ -180,7 +184,7 @@ function buildDeleteMessage(program: Program): IREnumCase {
   const messageID = createUniqueID(RPCMessageCategory.ObjectDelete, 0);
   const messageData = new IRObject(
     false,
-    InternalStructID.FetchRequests,
+    InternalStructID.Delete,
     `DeleteMessage`
   );
 
@@ -204,7 +208,7 @@ function buildFetchByUUIDMessage(program: Program): IREnumCase {
   const caseName = 'FetchByUUID';
   const messageData = new IRObject(
     false,
-    InternalStructID.FetchRequests,
+    InternalStructID.FetchByUUID,
     `${caseName}Message`
   );
 
@@ -223,7 +227,7 @@ function buildCreateMessage(program: Program, object: IRObject): IREnumCase {
   const messageID = createUniqueID(RPCMessageCategory.ObjectCreate, object.id);
   const messageData = new IRObject(
     false,
-    InternalStructID.FetchRequests,
+    InternalStructID.Create,
     object.rpcGetCreateMsg()
   );
 

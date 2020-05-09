@@ -1456,6 +1456,7 @@ dependencies = [
  "actix-web",
  "actix-web-actors",
  "bincode",
+ "rand",
  "rocksdb",
  "serde",
 ]
