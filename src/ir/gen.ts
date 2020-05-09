@@ -9,7 +9,7 @@ import { IRView } from './view';
 // prettier-ignore
 const RESERVED_NAMES = new Set<string>([
   // VOSS Keywords.
-  'uuid', 'voss_session',
+  'uuid', 'voss_session', 'rpc',
   // JS Keywords.
   'break', 'case', 'catch', 'continue', 'debugger', 'default', 'delete', 'do',
   'else', 'finally', 'for', 'function', 'if', 'in', 'instanceof', 'new', 'with',

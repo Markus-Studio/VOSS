@@ -2,6 +2,7 @@ import { Resolvable, createResolvable, stddev, mean, delay } from './utils';
 import { IBuilder } from './builder';
 import { EnumCase, DeserializeFn, Struct } from './types';
 import { IReader } from './reader';
+import { generateUUID } from './uuid';
 
 interface PendingMessage {
   message: ArrayBuffer;
@@ -225,7 +226,7 @@ export abstract class VossSessionBase<T extends EnumCase> {
     pending.replyPromise.resolve();
   }
 
-  close() {
+  close(): void {
     this.isClosed = true;
     if (this.websocket) this.websocket.close();
     for (const { replyPromise } of this.pendingMessages.values())
@@ -233,6 +234,11 @@ export abstract class VossSessionBase<T extends EnumCase> {
     this.pendingMessages.clear();
   }
 
+  uuid(): string {
+    return generateUUID(this.now(), this.getHostId());
+  }
+
   protected abstract createClockRequest(timestamp: number): T;
   protected abstract onMessage(message: T): void;
+  protected abstract getHostId(): number;
 }

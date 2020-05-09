@@ -1,5 +1,8 @@
 import { EnumCase } from './types';
 
+const e = eval;
+export const global = e('this');
+
 export function nextNumberDivisibleByPowOfTwo(
   number: number,
   pow: number
