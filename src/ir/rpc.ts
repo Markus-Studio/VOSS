@@ -7,19 +7,21 @@ import { IRView } from './view';
 const enum RPCMessageCategory {
   Clock = 0,
   Reply = 1,
-  RootFetch = 2,
-  ViewFetch = 3,
-  ObjectSet = 4,
-  ObjectCreate = 5,
-  ObjectDelete = 6,
-  FetchByUUID = 7,
+  HostID = 2,
+  RootFetch = 3,
+  ViewFetch = 4,
+  ObjectSet = 5,
+  ObjectCreate = 6,
+  ObjectDelete = 7,
+  FetchByUUID = 8,
 }
 
 export enum InternalStructID {
   ClockData = 0,
   ReplyData = 1,
-  SetRequests = 2,
-  FetchRequests = 3,
+  HostID = 2,
+  SetRequests = 3,
+  FetchRequests = 4,
 }
 
 export function buildRPC(program: Program): IREnum {
@@ -28,6 +30,7 @@ export function buildRPC(program: Program): IREnum {
 
   rpcMessages.addCase(buildClockMessage(program));
   rpcMessages.addCase(buildReplyMessage(program));
+  rpcMessages.addCase(buildHostIdMessage(program));
   rpcMessages.addCase(buildDeleteMessage(program));
   rpcMessages.addCase(buildFetchByUUIDMessage(program));
 
@@ -77,6 +80,17 @@ function buildReplyMessage(program: Program): IREnumCase {
     new IRObjectField('replyId', program.resolveType('u32'))
   );
   return new IREnumCase('Reply', messageData.getType(), messageID);
+}
+
+function buildHostIdMessage(program: Program): IREnumCase {
+  const messageID = u32FromBytesVecLE([RPCMessageCategory.Reply, 0, 0, 0]);
+  const messageData = new IRObject(
+    false,
+    InternalStructID.ClockData,
+    'HostIDMessage'
+  );
+  messageData.addField(new IRObjectField('hash', program.resolveType('u32')));
+  return new IREnumCase('HostID', messageData.getType(), messageID);
 }
 
 function buildRootFetchMessage(program: Program, object: IRObject): IREnumCase {
