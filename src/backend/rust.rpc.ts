@@ -11,8 +11,9 @@ export function generateRPC(writer: PrettyWriter, program: Program): void {
   use actix::prelude::{Message};
   use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
   use rand::{self, rngs::ThreadRng, Rng};
-  use std::collections::HashMap;
-  
+  use std::collections::{HashMap, HashSet};
+  use actix_web::web::Bytes;
+
   const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
   const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);\n`);
 
@@ -33,13 +34,24 @@ export function generateRPC(writer: PrettyWriter, program: Program): void {
 function generateEditor(writer: PrettyWriter, program: Program): void {
   writer.write(`
   #[derive(Message)]
+  #[rtype(result = "()")]
+  pub struct BinaryMessage(pub Bytes);
+
+  #[derive(Message)]
   #[rtype(u32)]
   pub struct Connect {
-    pub addr: Recipient<RPCMessage>,
+    pub addr: Recipient<BinaryMessage>,
+  }
+
+  #[derive(Message)]
+  #[rtype(result = "()")]
+  pub struct Disconnect {
+    pub id: u32,
   }
 
   pub struct EditorServer {
-    sessions: HashMap<u32, Recipient<RPCMessage>>,
+    sessions: HashMap<u32, Recipient<BinaryMessage>>,
+    scope_members: HashMap<voss_runtime::HASH20, HashSet<u32>>,
     rng: ThreadRng,
   }
 
@@ -47,7 +59,22 @@ function generateEditor(writer: PrettyWriter, program: Program): void {
     pub fn open(name: &str) -> EditorServer {
       EditorServer {
         sessions: HashMap::new(),
+        scope_members: HashMap::new(),
         rng: rand::thread_rng(),
+      }
+    }
+
+    fn broadcast(&self, message: RPCMessage, scope: &voss_runtime::HASH20, skip_id: u32) {
+      let msg = VossBuilder::serialize_enum(&message).unwrap();
+      let data = Bytes::from(msg);
+      if let Some(sessions) = self.scope_members.get(&scope) {
+        for id in sessions {
+            if *id != skip_id {
+                if let Some(addr) = self.sessions.get(id) {
+                    let _ = addr.do_send(BinaryMessage(data.clone()));
+                }
+            }
+        }
       }
     }
   }
@@ -56,23 +83,32 @@ function generateEditor(writer: PrettyWriter, program: Program): void {
     type Context = Context<Self>;
   }
 
-  // Handler for Connect message.
-  //
-  // Register a new session in editor and assign a unique id.
   impl Handler<Connect> for EditorServer {
     type Result = u32;
 
     fn handle(&mut self, msg: Connect, _: &mut Context<Self>) -> Self::Result {
       let id = loop {
         let id = self.rng.gen::<u32>();
-        if !self.sessions.contains_key(&id) {
+        if id > 0 && !self.sessions.contains_key(&id) {
           break id;
         }
       };
-
       self.sessions.insert(id, msg.addr);
-
       id
+    }
+  }
+
+  impl Handler<Disconnect> for EditorServer {
+    type Result = ();
+
+    fn handle(&mut self, msg: Disconnect, _: &mut Context<Self>) -> Self::Result {
+      if self.sessions.remove(&msg.id).is_some() {
+        for (_, sessions) in &mut self.scope_members {
+          if sessions.remove(&msg.id) {
+            break;
+          }
+        }
+      }
     }
   }
   `);
@@ -115,6 +151,7 @@ function generateWebSocket(writer: PrettyWriter, program: Program) {
     }
 
     fn stopping(&mut self, _: &mut Self::Context) -> Running {
+      self.editor.do_send(Disconnect { id: self.id });
       Running::Stop
     }
   }
@@ -163,14 +200,11 @@ function generateWebSocket(writer: PrettyWriter, program: Program) {
       }
   }
 
-  // Handle RPC messages sent from Editor, simply send it to peer websocket.
-  impl Handler<RPCMessage> for WsSession {
+  impl Handler<BinaryMessage> for WsSession {
     type Result = ();
 
-    fn handle(&mut self, msg: RPCMessage, ctx: &mut Self::Context) {
-      // Currently we serialize message here, which is wrong, it serializes
-      // the same message per each peer. but it can be fixed later.
-      ctx.binary(VossBuilder::serialize_enum(&msg).unwrap());
+    fn handle(&mut self, msg: BinaryMessage, ctx: &mut Self::Context) {
+      ctx.binary(msg.0);
     }
   }
 
@@ -197,5 +231,6 @@ function generateWebSocket(writer: PrettyWriter, program: Program) {
   fn now() -> f64 {
     let duration = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
     duration.as_millis() as f64
-  }\n`);
+  }
+  `);
 }

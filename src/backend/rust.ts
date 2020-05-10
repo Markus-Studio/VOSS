@@ -180,12 +180,8 @@ function generateObjectPropertyGetter(
 }
 
 export function generateEnum(writer: PrettyWriter, oneof: IREnum) {
-  const isRPCMessage = oneof.pascalCase === 'RPCMessage';
   const derive = ['Clone', 'Debug', 'PartialEq'];
-  if (isRPCMessage) derive.push('Message');
-  writer.write(`#[derive(${derive.join(', ')})]${
-    isRPCMessage ? '\n#[rtype(result = "()")]' : ''
-  }
+  writer.write(`#[derive(${derive.join(', ')})]
   pub enum ${oneof.pascalCase} {
     ${[...oneof.getCases()]
       .map((enumCase) => {

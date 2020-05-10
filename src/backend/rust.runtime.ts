@@ -6,7 +6,7 @@ pub mod voss_runtime {
   use std::cell::RefCell;
   use std::u8;
 
-  #[derive(PartialEq, Copy, Clone)]
+  #[derive(PartialEq, Eq, Copy, Clone, Hash)]
   pub struct HASH16([u8; 16]);
 
   impl std::fmt::Debug for HASH16 {
@@ -47,7 +47,7 @@ pub mod voss_runtime {
     }
   }
 
-  #[derive(PartialEq, Copy, Clone)]
+  #[derive(PartialEq, Eq, Copy, Clone, Hash)]
   pub struct HASH20([u8; 20]);
 
   impl std::fmt::Debug for HASH20 {
