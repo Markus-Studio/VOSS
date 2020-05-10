@@ -1,7 +1,16 @@
-object User {
-  group: Group;
+struct Color {
+  r: u8;
+  g: u8;
+  b: u8;
 }
 
-object Group {
-  @View(User, group) users;
+struct Vec2 {
+  x: f64;
+  y: f64;
+}
+
+object Rect {
+  color: Color;
+  name: str;
+  position: Vec2;
 }

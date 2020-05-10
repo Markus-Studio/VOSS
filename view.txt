@@ -1,0 +1,37 @@
+// object Host {
+//   @View(Target, via) owned;
+// }
+
+
+class Host {
+  viewOwned(session: Session) -> ReadonlyView<Target> {
+    return Target.getViaViewFor(session, self);
+  }
+}
+
+class Target {
+  static viaView = WeakMap<Session, Map<Host, View<Target>>>;
+
+  static getViaViewFor(session: Session, object: Host) {
+    return Target
+      .viaView
+      .get_or_insert(session, || Map())
+      .get_or_insert(self, || View(async || {
+        // If rootTargetView is loaded, then we don't need to send
+        // a request to the server, all of the data is still there.
+        await session.sendRequest(FetchViaView());
+      }));
+  }
+
+  init(session: Session) {
+    Target.getViaViewFor(session, self.via).add(self);
+  }
+
+  updated(session: Session, field: 'via', prev: Host, current: Host) {
+    match field {
+      'via' => {
+
+      }
+    }
+  }
+}

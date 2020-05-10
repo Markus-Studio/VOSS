@@ -11,15 +11,6 @@ export interface ChangeNotifier {
   off(event: 'change', cb: () => void): void;
 }
 
-export interface ReadonlyView<T> extends ChangeNotifier {
-  readonly members: ReadonlyArray<T>;
-}
-
-export interface ReadonlyLazyView<T> extends ReadonlyView<T> {
-  readonly isLoaded: boolean;
-  load(): Promise<void>;
-}
-
 export interface Builder {
   struct(offset: number, value: Struct): void;
   enum(offset: number, value: EnumCase): void;
