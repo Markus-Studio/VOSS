@@ -77,6 +77,10 @@ function generateObject(writer: PrettyWriter, object: IRObject): void {
   writer.write(`static readonly maxElementAlignment = ${maxAlign};\n`);
   writer.write(`static readonly size = ${object.getSize()};\n`);
 
+  if (object.isRoot) {
+    generateObjectViews(writer, object);
+  }
+
   // ... Build the constructor.
   generateObjectClassConstructor(writer, object);
 
@@ -96,6 +100,8 @@ function generateObject(writer: PrettyWriter, object: IRObject): void {
 
   writer.write('}\n');
 }
+
+function generateObjectViews(writer: PrettyWriter, object: IRObject): void {}
 
 function generateObjectClassConstructor(
   writer: PrettyWriter,
