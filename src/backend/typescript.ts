@@ -1,9 +1,12 @@
+import {
+  PrimitiveTypeName,
+  IRObject,
+  IRObjectField,
+  IREnum,
+  Program,
+} from '../ir';
 import { PrettyWriter } from './writer';
-import { Program } from '../ir/program';
-import { IRObject, IRObjectField } from '../ir/object';
 import { getObjectFieldPrivateType, flatten } from '../utils';
-import { PrimitiveTypeName } from '../ir/type';
-import { IREnum } from '../ir/enum';
 import * as pluralize from 'pluralize';
 
 const PRIMITIVE_TYPE: Record<PrimitiveTypeName, string> = {

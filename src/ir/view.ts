@@ -1,6 +1,7 @@
-import { IRObject, IRObjectField } from './object';
-import memorize from 'memorize-decorator';
+import { IRObject } from './object';
 import { toPascalCase, toCamelCase, toSnakeCase } from '../utils';
+import { IRObjectField } from './field';
+import memorize from 'memorize-decorator';
 
 // object Host {
 //   @View(target, via) name;

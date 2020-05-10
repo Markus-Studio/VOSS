@@ -1,10 +1,11 @@
 import * as AST from '../frontend/ast';
 import { Counter, toSnakeCase } from '../utils';
-import * as toposort from 'toposort';
 import { Program } from './program';
-import { IRObject, IRObjectField } from './object';
+import { IRObject } from './object';
 import { IREnum, IREnumCase } from './enum';
 import { IRView } from './view';
+import { IRObjectField } from './field';
+import * as toposort from 'toposort';
 
 // prettier-ignore
 const RESERVED_NAMES = new Set<string>([

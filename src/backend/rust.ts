@@ -1,11 +1,15 @@
-import { Program } from '../ir/program';
+import {
+  PrimitiveTypeName,
+  IRType,
+  IRObject,
+  IRObjectField,
+  IREnum,
+  Program,
+} from '../ir';
 import { PrettyWriter } from './writer';
-import { PrimitiveTypeName, IRType } from '../ir/type';
-import { IRObject, IRObjectField } from '../ir/object';
 import { getObjectFieldPrivateType } from '../utils';
 import { fastPow2Log2, enumEqual } from '../../runtime/utils';
 import { runtime } from './rust.runtime';
-import { IREnum } from '../ir/enum';
 import { generateRPC } from './rust.rpc';
 
 export const PRIMITIVE_TYPE: Record<PrimitiveTypeName, string> = {

@@ -1,6 +1,7 @@
 import { IREnum, IREnumCase } from './enum';
 import { Program } from './program';
-import { IRObject, IRObjectField } from './object';
+import { IRObject } from './object';
+import { IRObjectField } from './field';
 import { toPascalCase } from '../utils';
 import { IRView } from './view';
 
