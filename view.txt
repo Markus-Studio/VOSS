@@ -30,7 +30,8 @@ class Target {
   updated(session: Session, field: 'via', prev: Host, current: Host) {
     match field {
       'via' => {
-
+        Target.getViaViewFor(session, prev).remove(self);
+        Target.getViaViewFor(session, current).add(self);
       }
     }
   }

@@ -2,7 +2,7 @@ export enum ViewStatus {
   Init,
   Loading,
   Loaded,
-  Destroyed
+  Destroyed,
 }
 
 export interface ReadonlyView<T> {
