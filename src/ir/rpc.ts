@@ -46,14 +46,13 @@ export function buildRPC(program: Program): IREnum {
 
     let counter = 0;
     for (const field of object.getFields()) {
+      if (field.isViewed()) {
+        rpcMessages.addCase(buildFetchViewMessage(program, field, counter++));
+      }
+
       if (field.name !== 'uuid') {
         rpcMessages.addCase(buildSetFieldMessage(program, field, counter++));
       }
-    }
-
-    counter = 0;
-    for (const view of object.getViews()) {
-      rpcMessages.addCase(buildFetchViewMessage(program, view, counter++));
     }
   }
 
@@ -154,15 +153,15 @@ function buildSetFieldMessage(
 
 function buildFetchViewMessage(
   program: Program,
-  view: IRView,
+  field: IRObjectField,
   id: number
 ): IREnumCase {
-  const object = view.getHost();
+  const object = field.getOwner();
   const messageID = createUniqueID(RPCMessageCategory.ViewFetch, object.id, id);
   const messageData = new IRObject(
     false,
     InternalStructID.FetchView,
-    view.rpcGetFetchMsg()
+    field.rpcGetFetchViewMsg()
   );
 
   messageData.addField(
@@ -170,11 +169,11 @@ function buildFetchViewMessage(
   );
 
   messageData.addField(
-    new IRObjectField('hostUUID', program.resolveType('hash16'))
+    new IRObjectField('host', program.resolveType('hash16'))
   );
 
   return new IREnumCase(
-    view.rpcGetFetchCase(),
+    field.rpcGetFetchViewCase(),
     messageData.getType(),
     messageID
   );

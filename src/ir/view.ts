@@ -92,17 +92,15 @@ export class IRView {
    * Returns name of the RPC message case that requests members of this
    * view from the server.
    */
-  @memorize()
   rpcGetFetchCase() {
-    return 'Fetch' + this.host!.pascalCase + this.pascalCase;
+    return this.via.rpcGetFetchViewCase();
   }
 
   /**
    * Return the name of the message data object of FetchView request for
    * this view.
    */
-  @memorize()
   rpcGetFetchMsg() {
-    return this.rpcGetFetchCase() + 'Message';
+    return this.via.rpcGetFetchViewMsg();
   }
 }

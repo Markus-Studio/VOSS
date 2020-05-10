@@ -247,4 +247,14 @@ export class IRObjectField {
   rpcGetSetMsg() {
     return this.rpcGetSetCase() + 'Message';
   }
+
+  @memorize()
+  rpcGetFetchViewCase() {
+    return 'Fetch' + this.owner!.pascalCase + this.pascalCase;
+  }
+
+  @memorize()
+  rpcGetFetchViewMsg() {
+    return this.rpcGetFetchViewCase() + 'Message';
+  }
 }
