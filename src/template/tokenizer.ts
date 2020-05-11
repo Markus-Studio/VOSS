@@ -98,8 +98,7 @@ export class Tokenizer {
   }
 
   private parseError(): void {
-    // TODO(qti3e) Parse error.
-    console.log('Parse error');
+    throw new Error('Parse error');
   }
 
   private emitCharacterToken(character: string): void {
@@ -879,58 +878,26 @@ export class Tokenizer {
     }
 
     switch (char) {
-      case '/':
-        this.JSConsumeComment();
-        break;
       case "'":
         this.JSConsumeQuoted("'");
         break;
       case '"':
         this.JSConsumeQuoted('"');
         break;
-      case '[':
-        this.JSConsumeEnding(']');
-        break;
-      case '{':
-        this.JSConsumeEnding('}');
-        break;
       case '(':
         this.JSConsumeEnding(')');
         break;
+      case ')':
+        this.cursor -= 1;
+        return;
       case undefined:
         this.parseError();
         this.unconsume();
         this[States.DATA]();
         return;
     }
-    this.consumeJSExpr();
-  }
 
-  private JSConsumeComment() {
-    const char = this.consumeNextInputCharacter();
-    if (char === '/') {
-      let tmp;
-      while ((tmp = this.consumeNextInputCharacter())) {
-        if (tmp === '\r' || tmp === '\n') {
-          return;
-        }
-      }
-      this.parseError();
-    } else if (char === '*') {
-      if (this.consumeNextInputCharacter() === '*') {
-        let tmp;
-        while ((tmp = this.consumeNextInputCharacter())) {
-          if (tmp === '*' && this.data[this.cursor + 1] === '/') {
-            this.consume();
-            return;
-          }
-        }
-        this.parseError();
-        return;
-      }
-      this.unconsume();
-    }
-    this.unconsume();
+    this.consumeJSExpr();
   }
 
   private JSConsumeQuoted(q: string) {

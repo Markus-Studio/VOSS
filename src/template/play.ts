@@ -11,7 +11,7 @@ context.run(`
 
   <line *indent="1" *for="let _ in array" [value]="_ + 'XxX'" />
 
-  {{ 'Hello-Test' + '-P' | pascal }}
+  {{ (2 + 3) * 5 }}
 
   class X {
     fn () {

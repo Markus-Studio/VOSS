@@ -54,7 +54,6 @@ export class Expression {
     ) {
       return instructions[0].value;
     }
-    console.log(instructions);
     return new Expression(instructions);
   }
 

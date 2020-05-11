@@ -1,4 +1,4 @@
-import { Token, Tokenizer, TokenKind } from './tokenizer';
+import { Tokenizer, TokenKind } from './tokenizer';
 import { ByteCode, ByteCodeType } from './expression';
 
 function parsePrimary(tokenizer: Tokenizer): ByteCode[] {
@@ -47,7 +47,7 @@ function parseExpression1(
   minPrecedence: number
 ): ByteCode[] {
   let lookahead = tokenizer.peek();
-  while (lookahead && PRECEDENCE[lookahead.kind] > minPrecedence) {
+  while (lookahead && PRECEDENCE[lookahead.kind] >= minPrecedence) {
     let op = lookahead;
     let opp = PRECEDENCE[op.kind];
     tokenizer.advance();
@@ -56,7 +56,7 @@ function parseExpression1(
     while (
       lookahead &&
       (PRECEDENCE[lookahead.kind] > opp ||
-        (PRECEDENCE[lookahead.kind] >= opp &&
+        (PRECEDENCE[lookahead.kind] == opp &&
           isLeftAssociative(lookahead.kind)))
     ) {
       rhs = parseExpression1(tokenizer, rhs, PRECEDENCE[lookahead.kind]);
