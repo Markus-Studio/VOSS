@@ -1,5 +1,5 @@
 import { Program } from '../ir';
-import { register } from '../template/typescript';
+import { register } from '../template/collections/typescript';
 import { Context } from '../template/context';
 
 export function generate(program: Program) {

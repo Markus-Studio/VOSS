@@ -1,6 +1,11 @@
 import * as types from './types';
 import { Component } from './component';
-import { ContainerComponent, TextComponent } from './builtin';
+import {
+  ContainerComponent,
+  TextComponent,
+  ForComponent,
+  WithIndent,
+} from './collections/builtin';
 import { Tokenizer } from './tokenizer';
 import { constructTree } from './tree';
 import { Context } from './context';
@@ -45,21 +50,40 @@ function toComponent(context: Context, node: types.Node): Component {
 
   const constructor = context.resolveComponent(node.name);
 
+  const entries = Object.entries(node.attributes);
+  const inOrder: ('*for' | '*if')[] = [];
+
   const attributes = new Map(
-    Object.entries(node.attributes).map(([key, value]) => {
-      if (key.startsWith('[') && key.endsWith(']')) {
-        return [key.slice(1, -1), Expression.fromSource(value)];
-      }
+    entries
+      .filter(([key, value]) => {
+        if (key.startsWith('*')) {
+          if (key === '*for') {
+            inOrder.push('*for');
+            return false;
+          } else if (key === '*if') {
+            inOrder.push('*if');
+            return false;
+          } else if (key === '*indent') {
+            return false;
+          }
+          throw new Error(`Invalid attribute ${key}`);
+        }
+        return true;
+      })
+      .map(([key, value]) => {
+        if (key.startsWith('[') && key.endsWith(']')) {
+          return [key.slice(1, -1), Expression.fromSource(value)];
+        }
 
-      if (value === '') {
-        return [key, true];
-      }
+        if (value === '') {
+          return [key, true];
+        }
 
-      return [key, value];
-    })
+        return [key, value];
+      })
   );
 
-  const component = new constructor(attributes);
+  let component = new constructor(attributes);
 
   for (const child of node.children) {
     if (
@@ -71,5 +95,56 @@ function toComponent(context: Context, node: types.Node): Component {
     component.push(toComponent(context, child));
   }
 
+  for (const x of inOrder.reverse()) {
+    switch (x) {
+      case '*for':
+        component = wrapFor(component, node.attributes['*for']);
+        break;
+      case '*if':
+        component = wrapIf(component, node.attributes['*if']);
+        break;
+    }
+  }
+
+  if (node.attributes['*indent']) {
+    component = wrapIndent(component, node.attributes['*indent']);
+  }
+
   return component;
+}
+
+function wrapFor(component: Component, expr: string): Component {
+  const result = expr.trim().match(/^let ([a-z_][a-z_0-9]*) in (.+)/i);
+
+  if (!result) {
+    throw new Error(`'${expr}' is not a valid value for *for`);
+  }
+
+  const bind = result[1];
+  const iter = Expression.fromSource(result[2]);
+
+  const wrapper = new ForComponent(
+    new Map([
+      ['iter', iter],
+      ['bind', bind],
+    ])
+  );
+
+  wrapper.push(component);
+
+  return wrapper;
+}
+
+function wrapIf(component: Component, expr: string): Component {
+  const condition = Expression.fromSource(expr);
+
+  const wrapper = new ForComponent(new Map([['condition', condition]]));
+  wrapper.push(component);
+  return wrapper;
+}
+
+function wrapIndent(component: Component, value: string): Component {
+  const wrapper = new WithIndent(new Map([['value', Number(value)]]));
+  wrapper.push(component);
+  return wrapper;
 }

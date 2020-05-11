@@ -31,6 +31,6 @@ export function getCommonIndent(lines: string[]): string {
 
 export function removeCommonIndent(lines: string[]): string[] {
   if (lines.length === 0) return [];
-  const indentLength = getCommonIndent(lines).length;
+  const indentLength = getCommonIndent(lines.filter((line) => !!line)).length;
   return lines.map((line) => line.slice(indentLength));
 }

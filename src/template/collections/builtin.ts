@@ -1,4 +1,4 @@
-import { Component } from './component';
+import { Component } from '../component';
 
 export class ContainerComponent extends Component {
   render() {
@@ -8,33 +8,45 @@ export class ContainerComponent extends Component {
 
 export class TextComponent extends Component {
   render() {
-    const value = this.attr('value') || '';
-    this.context.writer.write(value);
+    const value = this.attr('value');
+    this.context.writer.write(String(value));
+  }
+}
+
+export class LineComponent extends Component {
+  render() {
+    const value = this.attr('value') || 1;
+    this.context.writer.writeLine(String(value));
   }
 }
 
 export class IndentComponent extends Component {
   render() {
-    const value = this.attr('value') || 1;
-    for (let i = 0; i < value; ++i) {
-      this.context.writer.indent();
-    }
+    const value = Number(this.attr('value')) || 1;
+    this.context.writer.indent(value);
   }
 }
 
 export class DedentComponent extends Component {
   render() {
-    const value = this.attr('value') || 1;
-    for (let i = 0; i < value; ++i) {
-      this.context.writer.dedent();
-    }
+    const value = Number(this.attr('value')) || 1;
+    this.context.writer.dedent(value);
+  }
+}
+
+export class WithIndent extends Component {
+  render() {
+    const value = Number(this.attr('value')) || 1;
+    this.context.writer.indent(value);
+    this.content();
+    this.context.writer.dedent(value);
   }
 }
 
 export class ForComponent extends Component {
   render() {
     const iterator = this.attr('iter');
-    const binding = this.attr('binding');
+    const binding = this.attr('bind');
     if (!iterator) throw new Error('For: iter attribute is required.');
 
     for (const item of iterator) {

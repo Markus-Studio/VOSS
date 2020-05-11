@@ -1,17 +1,22 @@
 import { Context } from './context';
-
-console.log('started');
+import { register } from './collections/typescript';
 
 const context = new Context();
+register(context);
 
 context.bind('array', [0, 1, 2, 3]);
 
 context.run(`
   Hello World
 
-  <for [iter]="array">
-    {{ 'Hello\n' }}
-  </for>
+  <line *indent="1" *for="let _ in array" [value]="_ + 'XxX'" />
+
+  {{ 'Hello-Test' + '-P' | pascal }}
+
+  class X {
+    fn () {
+    }
+  }
 `);
 
 console.log(context.data());

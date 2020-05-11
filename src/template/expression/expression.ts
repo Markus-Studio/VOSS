@@ -54,6 +54,7 @@ export class Expression {
     ) {
       return instructions[0].value;
     }
+    console.log(instructions);
     return new Expression(instructions);
   }
 
@@ -69,13 +70,15 @@ export class Expression {
   compute(context: Context) {
     this.stack = [];
 
+    let tmp: any;
+
     for (const bc of this.instructions) {
       switch (bc.type) {
         case ByteCodeType.ResolveName:
           this.push(context.resolve(bc.name));
           break;
         case ByteCodeType.Literal:
-          this.push(context.resolve(bc.value));
+          this.push(bc.value);
           break;
         case ByteCodeType.Pipe:
           this.push(context.resolvePipe(bc.name)(this.pop()));
@@ -85,22 +88,28 @@ export class Expression {
           this.push(this.pop()[key]);
           break;
         case ByteCodeType.And:
-          this.push(this.pop() && this.pop());
+          tmp = this.pop();
+          this.push(this.pop() && tmp);
           break;
         case ByteCodeType.Or:
-          this.push(this.pop() || this.pop());
+          tmp = this.pop();
+          this.push(this.pop() || tmp);
           break;
         case ByteCodeType.Add:
-          this.push(this.pop() + this.pop());
+          tmp = this.pop();
+          this.push(this.pop() + tmp);
           break;
         case ByteCodeType.Sub:
-          this.push(this.pop() - this.pop());
+          tmp = this.pop();
+          this.push(this.pop() - tmp);
           break;
         case ByteCodeType.Div:
-          this.push(this.pop() / this.pop());
+          tmp = this.pop();
+          this.push(this.pop() / tmp);
           break;
         case ByteCodeType.Mul:
-          this.push(this.pop() * this.pop());
+          tmp = this.pop();
+          this.push(this.pop() * tmp);
           break;
         case ByteCodeType.Eq:
           this.push(this.pop() === this.pop());
@@ -109,13 +118,13 @@ export class Expression {
           this.push(this.pop() !== this.pop());
           break;
         case ByteCodeType.Lt:
-          this.push(this.pop() < this.pop());
+          this.push(this.pop() > this.pop());
           break;
         case ByteCodeType.Lte:
-          this.push(this.pop() <= this.pop());
+          this.push(this.pop() >= this.pop());
           break;
         case ByteCodeType.Gt:
-          this.push(this.pop() > this.pop());
+          this.push(this.pop() < this.pop());
           break;
         case ByteCodeType.Gte:
           this.push(this.pop() >= this.pop());

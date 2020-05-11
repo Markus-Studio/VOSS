@@ -8,7 +8,8 @@ import {
   ForComponent,
   TextComponent,
   BindComponent,
-} from './builtin';
+  LineComponent,
+} from './collections/builtin';
 import { toPascalCase, toCamelCase, toSnakeCase } from '../utils';
 import { compile } from './compiler';
 
@@ -23,6 +24,7 @@ export class Context {
   constructor() {
     this.component('container', ContainerComponent);
     this.component('text', TextComponent);
+    this.component('line', LineComponent);
     this.component('bind', BindComponent);
     this.component('if', IfComponent);
     this.component('for', ForComponent);

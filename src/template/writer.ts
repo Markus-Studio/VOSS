@@ -6,17 +6,17 @@ export class Writer {
 
   constructor(private indention = '  ') {}
 
-  indent(): void {
-    this.indentLevel += 1;
-    this.currentIndent += this.indention.repeat(this.indentLevel);
+  indent(n = 1): void {
+    this.indentLevel += n;
+    this.currentIndent = this.indention.repeat(this.indentLevel);
   }
 
-  dedent(): void {
-    if (this.indentLevel === 0) {
+  dedent(n = 1): void {
+    if (this.indentLevel - n < 0) {
       throw new Error('Writer indention underflow.');
     }
-    this.indentLevel -= 1;
-    this.currentIndent += this.indention.repeat(this.indentLevel);
+    this.indentLevel -= n;
+    this.currentIndent = this.indention.repeat(this.indentLevel);
   }
 
   writeLine(line: string): void {
@@ -48,6 +48,16 @@ export class Writer {
   }
 
   data(): string {
-    return this.buffer.join('\n') + (this.buffered || '') + '\n';
+    while (this.buffer[0] === '') this.buffer.shift();
+    return (
+      this.buffer
+        .filter((line, i) => {
+          if (line === '') return !!this.buffer[i + 1];
+          return true;
+        })
+        .join('\n') +
+      (this.buffered || '') +
+      '\n'
+    );
   }
 }
