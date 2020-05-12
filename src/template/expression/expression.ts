@@ -84,7 +84,9 @@ export class Expression {
           break;
         case ByteCodeType.Get:
           let key = this.pop();
-          this.push(this.pop()[key]);
+          let obj = this.pop();
+          let val = obj[key];
+          this.push(typeof val === 'function' ? val.bind(obj) : val);
           break;
         case ByteCodeType.And:
           tmp = this.pop();

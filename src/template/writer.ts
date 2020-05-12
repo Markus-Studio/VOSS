@@ -25,7 +25,18 @@ export class Writer {
       this.buffered = undefined;
     }
 
+    const brace = line.trim() === '}';
+
+    if (
+      brace &&
+      this.buffer.length &&
+      this.buffer[this.buffer.length - 1] === ''
+    )
+      this.buffer.pop();
+
     this.buffer.push(this.currentIndent + line.trimRight());
+
+    if (brace) this.buffer.push('');
   }
 
   write(chunk: string): void {

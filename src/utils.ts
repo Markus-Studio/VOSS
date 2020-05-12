@@ -85,3 +85,9 @@ export class Counter<K> {
     return this.map[Symbol.iterator]();
   }
 }
+
+export function isIterable(obj: any): obj is Iterable<any> {
+  if (typeof obj === 'object' && obj == null)
+    return typeof obj[Symbol.iterator] === 'function';
+  return false;
+}

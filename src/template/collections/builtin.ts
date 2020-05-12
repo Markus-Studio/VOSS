@@ -47,7 +47,13 @@ export class ForComponent extends Component {
   render() {
     const iterator = this.attr('iter');
     const binding = this.attr('bind');
-    if (!iterator) throw new Error('For: iter attribute is required.');
+    if (!iterator) {
+      if (binding)
+        throw new Error(
+          `Cannot bind to ${binding}, iter attribute is not provided.`
+        );
+      throw new Error('For: iter attribute is required.');
+    }
 
     for (const item of iterator) {
       this.context.table.push();
@@ -63,7 +69,6 @@ export class ForComponent extends Component {
 export class IfComponent extends Component {
   render() {
     const condition = this.attr('condition');
-    if (!condition) throw new Error('If: condition attribute is required.');
     if (condition) {
       this.content();
     }

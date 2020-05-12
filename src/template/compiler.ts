@@ -5,6 +5,7 @@ import {
   TextComponent,
   ForComponent,
   WithIndent,
+  IfComponent,
 } from './collections/builtin';
 import { Tokenizer } from './tokenizer';
 import { constructTree } from './tree';
@@ -138,7 +139,7 @@ function wrapFor(component: Component, expr: string): Component {
 function wrapIf(component: Component, expr: string): Component {
   const condition = Expression.fromSource(expr);
 
-  const wrapper = new ForComponent(new Map([['condition', condition]]));
+  const wrapper = new IfComponent(new Map([['condition', condition]]));
   wrapper.push(component);
   return wrapper;
 }

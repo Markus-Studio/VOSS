@@ -1,5 +1,6 @@
 import { Context } from './context';
 import { Expression } from './expression/expression';
+import { isIterable } from '../utils';
 
 export type ComponentConstructor<T extends Component = Component> = {
   new (attributes: Map<string, any>): T;
@@ -22,6 +23,31 @@ export abstract class Component {
       }
     }
     return value;
+  }
+
+  protected list(name: string): string[] {
+    const result: string[] = [];
+
+    const base = this.attr(name);
+    if (typeof base === 'string') {
+      result.push(base);
+    } else if (isIterable(base)) {
+      for (const value of base) {
+        if (typeof value === 'string') {
+          result.push(value);
+        }
+      }
+    }
+
+    for (const key in this.attributes) {
+      if (key.startsWith(name + '.')) {
+        if (this.attr(key)) {
+          result.push(key.slice(name.length + 1));
+        }
+      }
+    }
+
+    return result;
   }
 
   protected content<T extends Component>(

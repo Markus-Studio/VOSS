@@ -18,17 +18,26 @@ export class InterfaceMemberComponent extends Component {
   render() {
     const name = this.attr('name');
     const type = this.attr('type');
-    const optional = this.attr('type');
-    this.context.writer.writeLine(`${name}${optional ? '?' : ''}: ${type};`);
+    const optional = this.attr('optional');
+    const readonly = this.attr('readonly');
+    this.context.writer.writeLine(
+      `${readonly ? 'readonly ' : ''}${name}${optional ? '?' : ''}: ${type};`
+    );
   }
 }
 
 export class ClassComponent extends Component {
   render() {
     const name = this.attr('name');
-    this.context.writer.writeLine(`class ${name} {`);
+    const parents = this.list('extend');
+    const interfaces = this.list('implement');
+    const e = parents.length ? ` extends ${parents.join(', ')}` : '';
+    const i = interfaces.length ? ` implements ${interfaces.join(', ')}` : '';
+
+    this.context.writer.writeLine(`class ${name}${e}${i} {`);
     this.context.writer.indent();
 
+    this.content(PropertyComponent);
     this.content();
 
     this.context.writer.dedent();
@@ -36,7 +45,43 @@ export class ClassComponent extends Component {
   }
 }
 
+export class PropertyComponent extends Component {
+  render() {
+    const staticTag = this.attr('static');
+    const protectedTag = this.attr('protected');
+    const privateTag = this.attr('private');
+    const readonlyTag = this.attr('readonly');
+    const optionalTag = this.attr('optional');
+    const name = this.attr('name');
+    const defaultValue = this.attr('default');
+    const type = this.attr('type');
+
+    if (staticTag + protectedTag + privateTag > 1) {
+      throw new Error('Only one active visibility is allowed.');
+    }
+
+    const visibility = staticTag
+      ? 'static '
+      : protectedTag
+      ? 'protected '
+      : privateTag
+      ? 'private '
+      : '';
+
+    let result = visibility + (readonlyTag ? 'readonly ' : '');
+    result += name;
+    if (optionalTag) result += '?';
+    if (type) result += ': ' + type;
+    if (defaultValue) result += ' = ' + defaultValue;
+    result += ';';
+
+    this.context.writer.writeLine(result);
+  }
+}
+
 export function register(context: Context) {
   context.component('interface', InterfaceComponent);
   context.component('interface-member', InterfaceMemberComponent);
+  context.component('class', ClassComponent);
+  context.component('property', PropertyComponent);
 }

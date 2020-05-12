@@ -1,7 +1,7 @@
 import { SymbolTable } from './symbols';
 import { isIdentifier, removeCommonIndent } from './utils';
 import { Writer } from './writer';
-import { ComponentConstructor, Component } from './component';
+import { ComponentConstructor } from './component';
 import {
   ContainerComponent,
   IfComponent,
@@ -12,6 +12,7 @@ import {
 } from './collections/builtin';
 import { toPascalCase, toCamelCase, toSnakeCase } from '../utils';
 import { compile } from './compiler';
+import * as pluralize from 'pluralize';
 
 export type Pipe = (value: any) => any;
 
@@ -31,6 +32,8 @@ export class Context {
     this.pipe('pascal', toPascalCase);
     this.pipe('camel', toCamelCase);
     this.pipe('snake', toSnakeCase);
+    this.pipe('plural', pluralize);
+    this.pipe('call', (fn: any) => fn());
   }
 
   bind(name: string, value: any): void {
