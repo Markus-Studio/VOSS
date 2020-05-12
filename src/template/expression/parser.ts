@@ -140,6 +140,7 @@ const PRECEDENCE: Record<TokenKind, number> = {
 };
 
 function isLeftAssociative(kind: TokenKind): boolean {
+  if (kind === TokenKind.Dot) return false;
   // Currently all of our operators are left-to-right!
   return PRECEDENCE[kind] > 0;
 }

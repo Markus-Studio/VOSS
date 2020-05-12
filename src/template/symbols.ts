@@ -11,7 +11,7 @@ export class SymbolTable {
 
   bind(name: string, value: any): void {
     if (!isIdentifier(name)) {
-      throw new Error('Symbol name must be a valid identifier.');
+      throw new Error(`Symbol name '${name}' must be a valid identifier.`);
     }
 
     const table = this.peek();

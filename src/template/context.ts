@@ -1,5 +1,5 @@
 import { SymbolTable } from './symbols';
-import { isIdentifier, removeCommonIndent } from './utils';
+import { isIdentifier } from './utils';
 import { Writer } from './writer';
 import { ComponentConstructor } from './component';
 import {
@@ -9,6 +9,8 @@ import {
   TextComponent,
   BindComponent,
   LineComponent,
+  TemplateComponent,
+  RenderComponent,
 } from './collections/builtin';
 import { toPascalCase, toCamelCase, toSnakeCase } from '../utils';
 import { compile } from './compiler';
@@ -29,6 +31,8 @@ export class Context {
     this.component('bind', BindComponent);
     this.component('if', IfComponent);
     this.component('for', ForComponent);
+    this.component('template', TemplateComponent);
+    this.component('render', RenderComponent);
     this.pipe('pascal', toPascalCase);
     this.pipe('camel', toCamelCase);
     this.pipe('snake', toSnakeCase);
@@ -81,9 +85,8 @@ export class Context {
   }
 
   run(template: string): void {
-    template = removeCommonIndent(template.split(/\r?\n/g)).join('\n');
     const component = compile(this, template);
-    component.write(this);
+    component.write();
   }
 
   data() {

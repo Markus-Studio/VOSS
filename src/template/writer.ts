@@ -54,7 +54,7 @@ export class Writer {
     }
 
     for (const line of lines) {
-      this.buffer.push(this.currentIndent + line);
+      this.buffer.push(this.currentIndent + line.trimRight());
     }
   }
 
@@ -66,6 +66,7 @@ export class Writer {
           if (line === '') return !!this.buffer[i + 1];
           return true;
         })
+        .map((line) => line.trimRight())
         .join('\n') +
       (this.buffered || '') +
       '\n'

@@ -1,4 +1,5 @@
 import { Component } from '../component';
+import { Context } from '../context';
 
 export class ContainerComponent extends Component {
   render() {
@@ -59,7 +60,7 @@ export class ForComponent extends Component {
       this.context.table.push();
       if (binding) this.context.table.bind(binding, item);
       for (const child of this.children) {
-        child.write(this.context);
+        child.write();
       }
       this.context.table.pop();
     }
@@ -80,5 +81,35 @@ export class BindComponent extends Component {
     const name = this.attr('name');
     const value = this.attr('value');
     this.context.bind(name, value);
+  }
+}
+
+export class TemplateComponent extends Component {
+  constructor(context: Context, attributes: Map<string, any>) {
+    super(context, attributes);
+    const org = this;
+    context.component(
+      attributes.get('name'),
+      class CustomComponent extends Component {
+        render() {
+          for (const child of org.getChildren()) child.write();
+          this.content();
+        }
+      }
+    );
+  }
+
+  getChildren() {
+    return this.children;
+  }
+
+  render() {}
+}
+
+export class RenderComponent extends Component {
+  render() {
+    const constructor = this.context.resolveComponent(this.attr('template'));
+    const component = new constructor(this.context, new Map());
+    component.write();
   }
 }

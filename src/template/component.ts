@@ -3,15 +3,19 @@ import { Expression } from './expression/expression';
 import { isIterable } from '../utils';
 
 export type ComponentConstructor<T extends Component = Component> = {
-  new (attributes: Map<string, any>): T;
+  new (context: Context, attributes: Map<string, any>): T;
 };
 
 export abstract class Component {
-  protected context!: Context;
   protected children: Set<Component> = new Set();
   protected currentChildren: Set<Component> = new Set();
 
-  constructor(private attributes: Map<string, any>) {}
+  constructor(
+    protected context: Context,
+    private attributes: Map<string, any>
+  ) {
+    if (!context) throw new Error('Context is required.');
+  }
 
   protected attr(name: string): any {
     const value = this.attributes.get(name);
@@ -51,7 +55,8 @@ export abstract class Component {
   }
 
   protected content<T extends Component>(
-    constructor?: ComponentConstructor<T>
+    constructor?: ComponentConstructor<T>,
+    sep = ''
   ) {
     if (!this.context) {
       throw new Error('Content() requires an active context.');
@@ -62,7 +67,8 @@ export abstract class Component {
         continue;
       }
 
-      child.write(this.context);
+      child.write();
+      if (sep) this.context.writer.write(sep);
       this.currentChildren.delete(child);
     }
   }
@@ -71,12 +77,10 @@ export abstract class Component {
     this.children.add(child);
   }
 
-  write(ctx: Context): void {
-    this.context = ctx;
+  write(): void {
     this.currentChildren = new Set(this.children);
     this.render();
     this.currentChildren.clear();
-    this.context = undefined as any;
   }
 
   protected abstract render(): void;

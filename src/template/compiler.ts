@@ -11,6 +11,7 @@ import { Tokenizer } from './tokenizer';
 import { constructTree } from './tree';
 import { Context } from './context';
 import { Expression } from './expression/expression';
+import { removeCommonIndent } from './utils';
 
 export function compile(context: Context, template: string): Component {
   const tokenizer = new Tokenizer();
@@ -21,7 +22,7 @@ export function compile(context: Context, template: string): Component {
     return toComponent(context, tree[0]);
   }
 
-  const container = new ContainerComponent(new Map());
+  const container = new ContainerComponent(context, new Map());
 
   for (const node of tree) {
     if (
@@ -38,13 +39,15 @@ export function compile(context: Context, template: string): Component {
 
 function toComponent(context: Context, node: types.Node): Component {
   if (node.kind === types.TokenKind.Character) {
-    return new TextComponent(
-      new Map([['value', node.character.replace(/ +$/, '')]])
-    );
+    let text = node.character.replace(/  +$/, '');
+    text = text.replace(/^(\r?\n)+/, '');
+    text = removeCommonIndent(text.split(/\r?\n/g)).join('\n');
+    return new TextComponent(context, new Map([['value', text]]));
   }
 
   if (node.kind === types.TokenKind.Expression) {
     return new TextComponent(
+      context,
       new Map([['value', Expression.fromSource(node.expr)]])
     );
   }
@@ -84,7 +87,7 @@ function toComponent(context: Context, node: types.Node): Component {
       })
   );
 
-  let component = new constructor(attributes);
+  let component = new constructor(context, attributes);
 
   for (const child of node.children) {
     if (
@@ -99,22 +102,26 @@ function toComponent(context: Context, node: types.Node): Component {
   for (const x of inOrder.reverse()) {
     switch (x) {
       case '*for':
-        component = wrapFor(component, node.attributes['*for']);
+        component = wrapFor(context, component, node.attributes['*for']);
         break;
       case '*if':
-        component = wrapIf(component, node.attributes['*if']);
+        component = wrapIf(context, component, node.attributes['*if']);
         break;
     }
   }
 
   if (node.attributes['*indent']) {
-    component = wrapIndent(component, node.attributes['*indent']);
+    component = wrapIndent(context, component, node.attributes['*indent']);
   }
 
   return component;
 }
 
-function wrapFor(component: Component, expr: string): Component {
+function wrapFor(
+  context: Context,
+  component: Component,
+  expr: string
+): Component {
   const result = expr.trim().match(/^let ([a-z_][a-z_0-9]*) in (.+)/i);
 
   if (!result) {
@@ -125,6 +132,7 @@ function wrapFor(component: Component, expr: string): Component {
   const iter = Expression.fromSource(result[2]);
 
   const wrapper = new ForComponent(
+    context,
     new Map([
       ['iter', iter],
       ['bind', bind],
@@ -136,16 +144,24 @@ function wrapFor(component: Component, expr: string): Component {
   return wrapper;
 }
 
-function wrapIf(component: Component, expr: string): Component {
+function wrapIf(
+  context: Context,
+  component: Component,
+  expr: string
+): Component {
   const condition = Expression.fromSource(expr);
 
-  const wrapper = new IfComponent(new Map([['condition', condition]]));
+  const wrapper = new IfComponent(context, new Map([['condition', condition]]));
   wrapper.push(component);
   return wrapper;
 }
 
-function wrapIndent(component: Component, value: string): Component {
-  const wrapper = new WithIndent(new Map([['value', Number(value)]]));
+function wrapIndent(
+  context: Context,
+  component: Component,
+  value: string
+): Component {
+  const wrapper = new WithIndent(context, new Map([['value', Number(value)]]));
   wrapper.push(component);
   return wrapper;
 }

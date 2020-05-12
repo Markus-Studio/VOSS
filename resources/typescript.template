@@ -37,5 +37,72 @@ type HASH20 = string;
       [default]="object.getSize | call"
       static readonly />
 
+    constructor(protected data: {{ object.pascalCase }}$Data) {}
+
+    <!-- Getter/Setters -->
+    <container *for="let field in object.getFields | call">
+      <!-- For Views we use fecthXXX -->
+      <method
+        *if="field.type.isRootObject"
+        [name]="'fetch' + field.pascalCase">
+        <parameter name="session" type="RPC.VossSession" />
+        return session.fetchObjectByUUID(this.data.{{field.camelCase}});
+      </method>
+
+      <!-- Primitive/Struct types have getters -->
+      <method
+        *if="field.type.isRootObject != true"
+        [name]="'get' + field.pascalCase">
+        return this.data.{{field.camelCase}};
+      </method>
+
+      <!-- Root object type setter -->
+      <method
+        *if="field.type.isRootObject"
+        [name]="'set' + field.pascalCase">
+        <parameter name="value" [type]="field.type | type" />
+        return new {{object.pascalCase}}({ ...this.data, {{field.camelCase}}: value.getUuid() });
+      </method>
+
+      <!-- Primitive/Struct type setter -->
+      <method
+        *if="field.type.isRootObject != true"
+        [name]="'set' + field.pascalCase">
+        <parameter name="value" [type]="field.type | type" />
+        return new {{object.pascalCase}}({ ...this.data, {{field.camelCase}}: value });
+      </method>
+    </container>
+
+    <render template="object-serialization" />
+
   </class>
 </container>
+
+<!-- This template implements serialization -->
+<template name="object-serialization">
+  <!-- The serializer -->
+  <method name="serialize">
+    <parameter name="builder" type="voss.Builder" />
+    <container *for="let field in object.getFields | call">
+      builder.{{field.type | encoder}}({{field.getOffset | call}}, this.data.{{field.camelCase}});
+    </container>
+  </method>
+
+  <!-- The deserializer -->
+  <method name="deserialize" static>
+    <parameter name="reader" type="voss.Reader" />
+    return new {{object.pascalCase}} ({
+    <container *for="let field in object.getFields | call" *indent="1">
+      <container *if="field.type.isPrimitive || field.type.isRootObject">
+      {{field.camelCase}}: reader.{{field.type | encoder}}({{field.getOffset | call}}),
+      </container>
+      <container *if="field.type.isStructure">
+        {{field.camelCase}}: reader.{{field.type | encoder}}({{field.getOffset | call}}, {{field.type.pascalCase}}.deserialize),
+      </container>
+      <container *if="field.type.isEnum">
+        {{field.camelCase}}: reader.{{field.type | encoder}}({{field.getOffset | call}}, {{field.type.pascalCase}}$DeserializerMap),
+      </container>
+    </container>
+    });
+  </method>
+</template>

@@ -45,12 +45,23 @@ function objectBase(name: string) {
   return `voss.ObjectBase<${name}>`;
 }
 
+function encoder(type: IRType): string {
+  return type.isRootObject
+    ? 'hash16'
+    : type.isObject
+    ? 'struct'
+    : type.isEnum
+    ? 'enum'
+    : type.asPrimitiveName();
+}
+
 export function generateTypescriptClient(program: Program): string {
   const context = new Context();
   register(context);
 
   context.pipe('type', typename);
   context.pipe('objectBase', objectBase);
+  context.pipe('encoder', encoder);
 
   context.bind('objects', [...program.getObjects()]);
 
