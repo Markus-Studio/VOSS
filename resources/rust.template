@@ -10,11 +10,15 @@
     <struct-member
       *for="let field in object.getFields | call"
       [name]="field.snakeCase"
-      [type]="field.type | type" />
+      [type]="field.type | type"
+      pub />
   </struct>
 
   <render template="object-base-impl" />
 </container>
+
+<!-- ****************************** ENUMS ****************************** -->
+<render *for="let enum in enums" template="voss-enum" />
 
 <template name="object-base-impl">
   <impl name="voss_runtime::VossStruct" [for]="object.pascalCase">
@@ -51,6 +55,55 @@
           [value]="field | deserialize"
           />
       })
+    </method>
+  </impl>
+</template>
+
+<template name="voss-enum">
+  <enum
+    [name]="enum.pascalCase"
+    pub
+    derive-Clone
+    derive-Debug
+    derive-PartialEq>
+    <enum-member
+      *for="let case in enum.getCases | call"
+      [name]="case.pascalCase"
+      [type]="case.type.pascalCase" />
+  </enum>
+
+  <impl
+    name="voss_runtime::VossEnum<'a>"
+    [for]="enum.pascalCase"
+    time="a">
+    <method name="get_type" type="u32">
+      <self-parameter ref />
+      match &self {
+        <container *indent="1" *for="let case in enum.getCases | call">
+          {{enum.pascalCase}}::{{case.pascalCase}}(_) => {{case.value}},
+        </container>
+      }
+    </method>
+
+    <method name="get_value" type="&'a dyn voss_runtime::VossStruct">
+      <self-parameter ref time="a" />
+      match &self {
+        <container *indent="1" *for="let case in enum.getCases | call">
+          {{enum.pascalCase}}::{{case.pascalCase}}(v) => v,
+        </container>
+      }
+    </method>
+  </impl>
+
+  <impl name="voss_runtime::FromReader" [for]="enum.pascalCase">
+    <method name="from_reader" type="Result<Self, voss_runtime::ReaderError>">
+      <parameter name="reader" type="voss_runtime::VossReader" ref />
+      match reader.u32(0)? {
+        <container *indent="1" *for="let case in enum.getCases | call">
+          Ok({{enum.pascalCase}}::{{case.pascalCase}}(reader.object::&lt;{{case.type.pascalCase}}&gt;(4)?)),
+        </container>
+        _ => Err(voss_runtime::ReaderError::InvalidBuffer)
+      }
     </method>
   </impl>
 </template>

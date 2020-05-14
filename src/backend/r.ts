@@ -71,7 +71,6 @@ function deserialize(field: IRObjectField): string {
   return `${uri}: reader.${writeFn}(${offset})?,`;
 }
 
-
 function encoder(type: IRType): string {
   return type.isRootObject
     ? 'hash16'
