@@ -5,7 +5,7 @@ export abstract class ObjectBase<T> extends IChangeNotifier
   implements Struct, ChangeNotifier {
   protected abstract readonly data: T;
   abstract serialize(builder: Builder): void;
-  abstract equal(builder: ObjectBase<T>): boolean;
+  abstract equal(other: ObjectBase<T>): boolean;
 
   CAS<K extends keyof T>(key: K, current: T[K], next: T[K]): boolean {
     const local = this.data[key];

@@ -9,8 +9,19 @@ struct Vec2 {
   y: f64;
 }
 
+struct Vec3 {
+  x: f64;
+  y: f64;
+  z: f64;
+}
+
+oneof Vec {
+  Vec2,
+  Vec3
+}
+
 object Rect {
   color: Color;
   name: str;
-  position: Vec2;
+  position: Vec;
 }

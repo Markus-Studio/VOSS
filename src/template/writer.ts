@@ -62,11 +62,11 @@ export class Writer {
     while (this.buffer[0] === '') this.buffer.shift();
     return (
       this.buffer
+        .map((line) => line.trimRight())
         .filter((line, i) => {
           if (line === '') return !!this.buffer[i + 1];
           return true;
         })
-        .map((line) => line.trimRight())
         .join('\n') +
       (this.buffered || '') +
       '\n'

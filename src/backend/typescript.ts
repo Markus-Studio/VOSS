@@ -5,6 +5,7 @@ import {
   IREnum,
   Program,
   IRType,
+  IREnumCase,
 } from '../ir';
 import { PrettyWriter } from './writer';
 import { flatten } from '../utils';
@@ -42,7 +43,7 @@ function typename(type: IRType): string {
 }
 
 function objectBase(name: string) {
-  return `voss.ObjectBase<${name}>`;
+  return `voss.ObjectBase<${name}$Data>`;
 }
 
 function encoder(type: IRType): string {
@@ -55,6 +56,59 @@ function encoder(type: IRType): string {
     : type.asPrimitiveName();
 }
 
+function sortForEqual(fields: Iterable<IRObjectField>): IRObjectField[] {
+  return [...fields].sort((a, b) => {
+    if (a.type.isPrimitive) return -1;
+    if (b.type.isPrimitive) return 1;
+    return 0;
+  });
+}
+
+function equalCondition(field: IRObjectField): string {
+  const name = field.camelCase;
+  if (field.type.isPrimitive || field.type.isRootObject) {
+    return `this.data.${name} === other.data.${name}`;
+  }
+
+  if (field.type.isObject) {
+    return `this.data.${name}.equal(other.data.${name})`;
+  }
+
+  if (field.type.isEnum) {
+    return `voss.enumEqual(this.data.${name}, other.data.${name})`;
+  }
+
+  throw new Error('Not implemented.');
+}
+
+function fieldSetterValue(field: IRObjectField): string {
+  if (field.type.isRootObject) {
+    return 'value.getUuid()';
+  }
+  return 'value';
+}
+
+function fieldSetterType(field: IRObjectField): string {
+  if (field.type.isRootObject) {
+    return field.type.pascalCase;
+  }
+  return typename(field.type);
+}
+
+function enumMember(member: IREnumCase): string {
+  const typeEnumName = member.getOwner().pascalCase + '$Type';
+  return `| voss.EnumCase<${typeEnumName}.${member.pascalCase}, ${member.type.pascalCase}>`;
+}
+
+function enumDeserializer(member: IREnumCase): string {
+  const typeEnumName = member.getOwner().pascalCase + '$Type';
+  return `[${typeEnumName}.${member.pascalCase}]: ${member.type.pascalCase}.deserialize,`;
+}
+
+function enumDeserializerType(irEnum: IREnum): string {
+  return `Record<${irEnum.pascalCase}$Type, voss.DeserializeFn<any>>`;
+}
+
 export function generateTypescriptClient(program: Program): string {
   const context = new Context();
   register(context);
@@ -62,8 +116,16 @@ export function generateTypescriptClient(program: Program): string {
   context.pipe('type', typename);
   context.pipe('objectBase', objectBase);
   context.pipe('encoder', encoder);
+  context.pipe('sortForEqual', sortForEqual);
+  context.pipe('equal', equalCondition);
+  context.pipe('fieldSetterValue', fieldSetterValue);
+  context.pipe('fieldSetterType', fieldSetterType);
+  context.pipe('enumMember', enumMember);
+  context.pipe('enumDeserializer', enumDeserializer);
+  context.pipe('enumDeserializerType', enumDeserializerType);
 
   context.bind('objects', [...program.getObjects()]);
+  context.bind('enums', [...program.getEnums()]);
 
   const template = readFileSync(
     join(dirname(require.main!.filename), '../resources/typescript.template'),
@@ -72,239 +134,6 @@ export function generateTypescriptClient(program: Program): string {
   context.run(template);
 
   return context.data();
-}
-
-function generateObject(writer: PrettyWriter, object: IRObject): void {
-  const maxAlign = object.getMaxElementAlignment();
-
-  // Build the proper class deceleration.
-  writer.write(`export class ${object.pascalCase} `);
-  if (object.isRoot)
-    writer.write(`extends voss.ObjectBase<${object.pascalCase}$Data> `);
-  writer.write(`implements voss.Struct {\n`);
-
-  // The data for the serialization.
-  writer.write(`static readonly maxElementAlignment = ${maxAlign};\n`);
-  writer.write(`static readonly size = ${object.getSize()};\n`);
-
-  if (object.isRoot) {
-    generateObjectViews(writer, object);
-  }
-
-  // ... Build the constructor.
-  generateObjectClassConstructor(writer, object);
-
-  for (const field of object.getFields()) {
-    generateObjectPropertyGetter(writer, field);
-    if (field.name !== 'uuid') {
-      generateObjectPropertySetter(writer, field);
-    }
-  }
-
-  // The compare function.
-  generateEqualMethod(writer, object);
-
-  // The serialization methods.
-  generateSerializeMethod(writer, object);
-  generateDeserializeMethod(writer, object);
-
-  writer.write('}\n');
-}
-
-function generateObjectViews(writer: PrettyWriter, object: IRObject): void {}
-
-function generateObjectClassConstructor(
-  writer: PrettyWriter,
-  object: IRObject
-): void {
-  const dataInterfaceName = object.pascalCase + '$Data';
-  writer.write(`constructor(protected data: ${dataInterfaceName}) {\n`);
-  if (object.isRoot) {
-    writer.write('super();\n');
-  }
-  writer.write(`}\n`);
-}
-
-function generateObjectPropertyGetter(
-  writer: PrettyWriter,
-  field: IRObjectField
-): void {
-  const name = 'this.data.' + field.camelCase;
-  const fieldName = field.pascalCase;
-  if (field.type.isRootObject) {
-    const returnName = field.type.asObject().pascalCase;
-    writer.write('fetch' + fieldName + '(session: RPC.VossSession):');
-    writer.write(` Promise<${returnName} | undefined> {\n`);
-    writer.write(`return session.fetchObjectByUUID(${name});\n`);
-    writer.write('}\n');
-  } else {
-    writer.write('get' + field.pascalCase + '() {\n');
-    writer.write(`return ${name};\n`);
-    writer.write('}\n');
-  }
-}
-
-function generateObjectPropertySetter(
-  writer: PrettyWriter,
-  field: IRObjectField
-): void {
-  const object = field.getOwner();
-  const valueType = field.type.isPrimitive
-    ? PRIMITIVE_TYPE[field.type.asPrimitiveName()]
-    : field.type.pascalCase;
-  const valueGetter = field.type.isRootObject ? `.getUuid()` : '';
-
-  if (object.isRoot) {
-    writer.write(`
-set${
-      field.pascalCase
-    }(session: RPC.VossSession, value: ${valueType}): Promise<void> {
-  this.data.${field.camelCase} = value${valueGetter};
-  this.emitChange();
-  return session.sendRequest((replyId, timestamp) => ({
-      type: RPC.RPCMessage$Type.${field.rpcGetSetCase()},
-      value: new RPC.${field.rpcGetSetMsg()}({
-        replyId,
-        timestamp,
-        target: this.data.uuid,
-        current: this.data.${field.camelCase},
-        next: value${valueGetter},
-      })
-  }));
-}\n`);
-    return;
-  }
-
-  writer.write(
-    `set${field.pascalCase}(value: ${valueType}): ${object.name} {\n`
-  );
-  writer.write(
-    `return new ${object.pascalCase}({...this.data, ${field.camelCase}: value${valueGetter}});\n`
-  );
-  writer.write('}\n');
-}
-
-function generateEqualMethod(writer: PrettyWriter, object: IRObject): void {
-  const fields = [...object.getFields()];
-  writer.write(`equal(other: ${object.pascalCase}): boolean {
-    if (this.data === other.data) return true;
-    return ${
-      fields.length === 0
-        ? 'true'
-        : fields
-            .sort((a, b) => {
-              if (a.type.isPrimitive) return -1;
-              if (b.type.isPrimitive) return 1;
-              return 0;
-            })
-            .map((field) => {
-              const name = field.camelCase;
-              if (field.type.isPrimitive || field.type.isRootObject) {
-                return `this.data.${name} === other.data.${name}`;
-              }
-
-              if (field.type.isObject) {
-                return `this.data.${name}.equal(other.data.${name})`;
-              }
-
-              if (field.type.isEnum) {
-                return `voss.enumEqual(this.data.${name}, other.data.${name})`;
-              }
-
-              throw new Error('Not implemented.');
-            })
-            .join(' &&\n')
-    };
-  }\n`);
-}
-
-function generateSerializeMethod(writer: PrettyWriter, object: IRObject): void {
-  writer.write('serialize(builder: voss.Builder) {\n');
-  for (const field of object.getFields()) {
-    const name = 'this.data.' + field.camelCase;
-    const offset = field.getOffset();
-    const writeFn: string = field.type.isRootObject
-      ? 'hash16'
-      : field.type.isObject
-      ? 'struct'
-      : field.type.isEnum
-      ? 'enum'
-      : field.type.asPrimitiveName();
-    writer.write(`builder.${writeFn}(${offset}, ${name});\n`);
-  }
-  writer.write('}\n');
-}
-
-function generateDeserializeMethod(
-  writer: PrettyWriter,
-  object: IRObject
-): void {
-  writer.write('static deserialize(reader: voss.Reader) {\n');
-  writer.write(`return new ${object.name}({\n`);
-  writer.indent();
-  for (const field of object.getFields()) {
-    writer.write(field.camelCase + ': ' + getDeserializeField(field) + ',\n');
-  }
-  writer.dedent();
-  writer.write('});\n}\n');
-}
-
-function getDeserializeField(field: IRObjectField): string {
-  const offset = field.getOffset();
-  const readFn: string = field.type.isRootObject
-    ? 'hash16'
-    : field.type.isObject
-    ? 'struct'
-    : field.type.isEnum
-    ? 'enum'
-    : field.type.asPrimitiveName();
-  const deserializeFn = field.type.isStructure
-    ? ', ' + field.type.asObject().name + '.deserialize'
-    : field.type.isEnum
-    ? ', ' + field.type.asEnum().name + '$DeserializerMap'
-    : '';
-  return `reader.${readFn}(${offset}${deserializeFn})`;
-}
-
-function generateEnum(writer: PrettyWriter, irEnum: IREnum): void {
-  generateEnumTypeEnum(writer, irEnum);
-  generateEnumCases(writer, irEnum);
-  generateEnumDeserializer(writer, irEnum);
-}
-
-function generateEnumTypeEnum(writer: PrettyWriter, irEnum: IREnum): void {
-  writer.write(`export const enum ${irEnum.pascalCase}$Type {\n`);
-  for (const enumCase of irEnum.getCases()) {
-    writer.write(`${enumCase.pascalCase} = ${enumCase.value},\n`);
-  }
-  writer.write('}\n');
-}
-
-function generateEnumCases(writer: PrettyWriter, irEnum: IREnum): void {
-  const typeEnumName = irEnum.pascalCase + '$Type';
-  writer.write(`export type ${irEnum.pascalCase} =\n`);
-  writer.indent();
-  for (const enumCase of irEnum.getCases()) {
-    writer.write(
-      `| voss.EnumCase<${typeEnumName}.${enumCase.pascalCase}, ${enumCase.type.pascalCase}>\n`
-    );
-  }
-  writer.write(';\n');
-  writer.dedent();
-}
-
-function generateEnumDeserializer(writer: PrettyWriter, irEnum: IREnum): void {
-  const constName = irEnum.pascalCase + '$DeserializerMap';
-  const typeEnumName = irEnum.pascalCase + '$Type';
-  writer.write(
-    `export const ${constName}: Record<${typeEnumName}, voss.DeserializeFn<any>> = {\n`
-  );
-  for (const enumCase of irEnum.getCases()) {
-    writer.write(
-      `[${typeEnumName}.${enumCase.pascalCase}]: ${enumCase.type.pascalCase}.deserialize,\n`
-    );
-  }
-  writer.write('}\n');
 }
 
 function generateSessionClass(writer: PrettyWriter, program: Program): void {
@@ -396,10 +225,10 @@ function generateRPC(writer: PrettyWriter, program: Program): void {
 
   for (const message of rpc.getCases()) {
     const object = message.type.asObject();
-    generateObject(writer, object);
+    // generateObject(writer, object);
   }
 
-  generateEnum(writer, rpc);
+  // generateEnum(writer, rpc);
   generateSessionClass(writer, program);
 
   writer.write('}\n');

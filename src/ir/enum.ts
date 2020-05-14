@@ -144,6 +144,14 @@ export class IREnumCase {
   }
 
   /**
+   * Returns the owner of this enum case.
+   */
+  getOwner(): IREnum {
+    if (!this.owner) throw new Error('Enum case is not attached.');
+    return this.owner;
+  }
+
+  /**
    * Return true if this case is attached to an enum.
    */
   isAttached(): boolean {

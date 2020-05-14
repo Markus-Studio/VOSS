@@ -31,10 +31,12 @@ export class ClassComponent extends Component {
     const name = this.attr('name');
     const parents = this.list('extend');
     const interfaces = this.list('implement');
+    const exported = this.attr('exported');
     const e = parents.length ? ` extends ${parents.join(', ')}` : '';
     const i = interfaces.length ? ` implements ${interfaces.join(', ')}` : '';
+    const x = exported ? 'export ' : '';
 
-    this.context.writer.writeLine(`class ${name}${e}${i} {`);
+    this.context.writer.writeLine(`${x}class ${name}${e}${i} {`);
     this.context.writer.indent();
 
     this.content(PropertyComponent);
@@ -162,9 +164,34 @@ export class ParameterComponent extends Component {
   }
 }
 
+export class EnumComponent extends Component {
+  render() {
+    const name = this.attr('name');
+    const exported = this.attr('exported');
+    const x = exported ? 'export ' : '';
+    const c = this.attr('const') ? 'const ' : '';
+
+    this.context.writer.writeLine(`${x}${c}enum ${name} {`);
+    this.context.writer.indent();
+    this.content();
+    this.context.writer.dedent();
+    this.context.writer.writeLine('}');
+  }
+}
+
+export class EnumMemberComponent extends Component {
+  render() {
+    const name = this.attr('name');
+    const value = this.attr('value');
+    this.context.writer.writeLine(`${name} = ${value},`);
+  }
+}
+
 export function register(context: Context) {
   context.component('interface', InterfaceComponent);
   context.component('interface-member', InterfaceMemberComponent);
+  context.component('enum', EnumComponent);
+  context.component('enum-member', EnumMemberComponent);
   context.component('class', ClassComponent);
   context.component('property', PropertyComponent);
   context.component('method', MethodComponent);

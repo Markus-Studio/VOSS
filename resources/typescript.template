@@ -4,7 +4,7 @@ import * as voss from './runtime';
 type HASH16 = string;
 type HASH20 = string;
 
-<!-- Structures -->
+<!-- ****************************** OBJECTS ****************************** -->
 <container *for="let object in objects">
   <!-- The $Data interface -->
   <interface [name]="object.pascalCase + '$Data'">
@@ -19,67 +19,76 @@ type HASH20 = string;
     *if="object.isRoot"
     [name]="object.pascalCase"
     [extend]="object.pascalCase | objectBase"
-    implement="voss.Struct">
-  </class>
+    implement="voss.Struct"
+    exported>
 
-  <class
-    *if="object.isRoot != true"
-    [name]="object.pascalCase"
-    implement="voss.Struct">
-
-    <!-- Size and Alignment -->
-    <property
-      name="maxElementAlignment"
-      [default]="object.getMaxElementAlignment | call"
-      static readonly />
-    <property
-      name="size"
-      [default]="object.getSize | call"
-      static readonly />
-
-    constructor(protected data: {{ object.pascalCase }}$Data) {}
+    constructor(protected data: {{ object.pascalCase }}$Data) {
+      super();
+    }
 
     <!-- Getter/Setters -->
     <container *for="let field in object.getFields | call">
-      <!-- For Views we use fecthXXX -->
+      <render template="object-getter" />
+
+      <!-- Setter -->
       <method
-        *if="field.type.isRootObject"
-        [name]="'fetch' + field.pascalCase">
+        [name]="'set' + field.pascalCase">
         <parameter name="session" type="RPC.VossSession" />
-        return session.fetchObjectByUUID(this.data.{{field.camelCase}});
-      </method>
-
-      <!-- Primitive/Struct types have getters -->
-      <method
-        *if="field.type.isRootObject != true"
-        [name]="'get' + field.pascalCase">
-        return this.data.{{field.camelCase}};
-      </method>
-
-      <!-- Root object type setter -->
-      <method
-        *if="field.type.isRootObject"
-        [name]="'set' + field.pascalCase">
-        <parameter name="value" [type]="field.type | type" />
-        return new {{object.pascalCase}}({ ...this.data, {{field.camelCase}}: value.getUuid() });
-      </method>
-
-      <!-- Primitive/Struct type setter -->
-      <method
-        *if="field.type.isRootObject != true"
-        [name]="'set' + field.pascalCase">
-        <parameter name="value" [type]="field.type | type" />
-        return new {{object.pascalCase}}({ ...this.data, {{field.camelCase}}: value });
+        <parameter name="value" [type]="field | fieldSetterType" />
+        this.data.{{field.camelCase}} = value;
+        this.emitChange();
+        return session.sendRequest((replyId, timestamp) => ({
+            type: RPC.RPCMessage$Type.{{field.rpcGetSetCase | call}},
+            value: new RPC.{{field.rpcGetSetMsg | call}}({
+              replyId,
+              timestamp,
+              target: this.data.uuid,
+              current: this.data.{{field.camelCase}},
+              next: {{ field | fieldSetterValue }},
+            })
+        }));
       </method>
     </container>
 
-    <render template="object-serialization" />
-
+    <render template="object-base" />
   </class>
+
+  <render template="object-struct" *if="object.isRoot != true" />
 </container>
 
-<!-- This template implements serialization -->
-<template name="object-serialization">
+<!-- ****************************** ENUMS ****************************** -->
+<render *for="let enum in enums" template="voss-enum" />
+
+<!-- ****************************** RPC ****************************** -->
+namespace RPC {
+}
+
+<!-- ****************************** TEMPLATES ****************************** -->
+
+<!-- This template implements serialization and equal -->
+<template name="object-base">
+  <!-- Size and Alignment -->
+  <property
+    name="maxElementAlignment"
+    [default]="object.getMaxElementAlignment | call"
+    static readonly />
+
+  <property
+    name="size"
+    [default]="object.getSize | call"
+    static readonly />
+  
+  <method name="equal">
+    <parameter name="other" [type]="object.pascalCase" />
+    return (
+      <line
+        *indent="1"
+        *for="let field in object.getFields | call | sortForEqual"
+        [value]="(field | equal) + ' &&'" />
+      <line *indent="1" value='false' />
+    );
+  </method>
+
   <!-- The serializer -->
   <method name="serialize">
     <parameter name="builder" type="voss.Builder" />
@@ -105,4 +114,80 @@ type HASH20 = string;
     </container>
     });
   </method>
+</template>
+
+<template name="object-getter">
+    <!-- For Views we use fecthXXX -->
+    <method
+      *if="field.type.isRootObject"
+      [name]="'fetch' + field.pascalCase">
+      <parameter name="session" type="RPC.VossSession" />
+      return session.fetchObjectByUUID(this.data.{{field.camelCase}});
+    </method>
+
+    <!-- Primitive/Struct types have getters -->
+    <method
+      *if="field.type.isRootObject != true"
+      [name]="'get' + field.pascalCase">
+      return this.data.{{field.camelCase}};
+    </method>
+</template>
+
+<template name="object-struct">
+  <class
+    [name]="object.pascalCase"
+    implement="voss.Struct"
+    exported>
+
+    constructor(protected data: {{ object.pascalCase }}$Data) {}
+
+    <!-- Getter/Setters -->
+    <container *for="let field in object.getFields | call">
+      <render template="object-getter" />
+
+      <!-- Root object type setter -->
+      <method
+        *if="field.type.isRootObject"
+        [name]="'set' + field.pascalCase">
+        <parameter name="value" [type]="field.type | type" />
+        return new {{object.pascalCase}}({ ...this.data, {{field.camelCase}}: value.getUuid() });
+      </method>
+
+      <!-- Primitive/Struct type setter -->
+      <method
+        *if="field.type.isRootObject != true"
+        [name]="'set' + field.pascalCase">
+        <parameter name="value" [type]="field.type | type" />
+        return new {{object.pascalCase}}({ ...this.data, {{field.camelCase}}: value });
+      </method>
+    </container>
+
+    <render template="object-base" />
+  </class>
+</template>
+
+<!-- ENUM TEMPLATE -->
+<template name="voss-enum">
+  <enum [name]="enum.pascalCase + '$Type'">
+    <enum-member
+      *for="let member in enum.getCases | call"
+      [name]="member.pascalCase"
+      [value]="member.value"
+      exported/>
+  </enum>
+
+  export type {{ enum.pascalCase }} =
+  <line
+    *for="let member in enum.getCases | call"
+    *indent="1"
+    [value]="member | enumMember" />
+  <line *indent="1" value=";" />
+
+  export const {{ enum.pascalCase + '$DeserializerMap'  }}: {{ enum | enumDeserializerType }} = {
+    <line
+      *for="let member in enum.getCases | call"
+      *indent="1"
+      [value]="member | enumDeserializer" />
+  }
+
 </template>
