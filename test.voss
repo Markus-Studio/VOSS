@@ -15,7 +15,7 @@ struct Vec3 {
   z: f64;
 }
 
-oneof Vec {
+oneof Position {
   Vec2,
   Vec3
 }
@@ -23,5 +23,5 @@ oneof Vec {
 object Rect {
   color: Color;
   name: str;
-  position: Vec;
+  position: Position;
 }

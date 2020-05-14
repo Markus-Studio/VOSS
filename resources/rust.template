@@ -1,0 +1,56 @@
+<!-- ****************************** OBJECTS ****************************** -->
+<container *for="let object in objects">
+  <!-- Build the basic struct -->
+  <struct
+    [name]="object.pascalCase"
+    pub
+    derive-Clone
+    derive-Debug
+    derive-PartialEq>
+    <struct-member
+      *for="let field in object.getFields | call"
+      [name]="field.snakeCase"
+      [type]="field.type | type" />
+  </struct>
+
+  <render template="object-base-impl" />
+</container>
+
+<template name="object-base-impl">
+  <impl name="voss_runtime::VossStruct" [for]="object.pascalCase">
+    <method name="alignment_pow2" type="usize">
+      <self-parameter ref />
+      <line [value]="object | alignmentPow2" />
+    </method>
+
+    <method name="size" type="usize">
+      <self-parameter ref />
+      <line [value]="object.getSize | call" />
+    </method>
+
+    <method
+      name="serialize"
+      type="Result<(), voss_runtime::BuilderError>">
+      <self-parameter ref />
+      <parameter name="builder" type="voss_runtime::VossBuilder" ref mut />
+      <line
+        *for="let field in object.getFields | call"
+        [value]="field | serialize"
+        />
+      Ok(())
+    </method>
+  </impl>
+
+  <impl name="voss_runtime::FromReader" [for]="object.pascalCase">
+    <method name="from_reader" type="Result<Self, voss_runtime::ReaderError>">
+      <parameter name="reader" type="voss_runtime::VossReader" ref />
+      Ok({{object.pascalCase}} {
+        <line
+          *indent="1"
+          *for="let field in object.getFields | call"
+          [value]="field | deserialize"
+          />
+      })
+    </method>
+  </impl>
+</template>

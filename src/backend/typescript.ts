@@ -1,19 +1,15 @@
 import {
   PrimitiveTypeName,
-  IRObject,
   IRObjectField,
   IREnum,
   Program,
   IRType,
   IREnumCase,
 } from '../ir';
-import { PrettyWriter } from './writer';
-import { flatten } from '../utils';
 import { Context } from '../template/context';
 import { register } from '../template/collections/typescript';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
-import * as pluralize from 'pluralize';
 
 const PRIMITIVE_TYPE: Record<PrimitiveTypeName, string> = {
   hash16: 'HASH16',
@@ -135,102 +131,4 @@ export function generateTypescriptClient(program: Program): string {
   context.run(template);
 
   return context.data();
-}
-
-function generateSessionClass(writer: PrettyWriter, program: Program): void {
-  writer.write(`export class VossSession extends voss.VossSessionBase<RPCMessage> {
-  protected hostID?: number;
-  protected objects = new Map<string, voss.ObjectBase<any>>();
-  protected deserializeMap = RPCMessage$DeserializerMap;
-  ${[...program.getObjects()]
-    .filter((obj) => obj.isRoot)
-    .map((obj) => {
-      const name = 'viewAll' + pluralize(obj.pascalCase);
-      return `readonly ${name}: any;`;
-    })
-    .join('\n')}
-
-  async fetchObjectByUUID(uuid: string): Promise<any> {
-    if (this.objects.has(uuid)) {
-      return this.objects.get(uuid);
-    }
-
-    await this.sendRequest((replyId) => ({
-        type: RPCMessage$Type.FetchByUUID,
-        value: new FetchByUUIDMessage({ replyId, uuid }),
-    }));
-
-    return this.objects.get(uuid);
-  }
-
-  protected createClockRequest(timestamp: number): RPCMessage {
-    return {
-      type: RPCMessage$Type.Clock,
-      value: new ClockMessage({ timestamp }),
-    };
-  }
-
-  protected getHostId(): number {
-    if (this.hostID === undefined) throw new Error('Host ID is not yet initialized.');
-    return this.hostID;
-  }
-
-  protected CAS(uuid: string, field: string, current: any, next: any): void {
-    const object = this.objects.get(uuid);
-    if (!object) return;
-    if (object.CAS(field, current, next)) return;
-    // Conflict.
-    throw new Error('Cannot handle conflict.');
-  }
-
-  protected onMessage(message: RPCMessage): void {
-    switch (message.type) {
-      case RPCMessage$Type.Reply:
-        this.receivedReply(message.value.getReplyId());
-        break;
-      case RPCMessage$Type.Clock:
-        this.receivedTime(message.value.getTimestamp());
-        break;
-      case RPCMessage$Type.HostID:
-        this.hostID = message.value.getValue();
-        break;
-      ${flatten(
-        [...program.getObjects()]
-          .filter((object) => object.isRoot)
-          .map((object) => {
-            const objectName = object.pascalCase;
-            return [...object.getFields()]
-              .filter((field) => field.name !== 'uuid')
-              .map((field) => {
-                return `case RPCMessage$Type.${field.rpcGetSetCase()}:
-              this.CAS(
-                message.value.getTarget(),
-                '${field.camelCase}',
-                message.value.getCurrent(),
-                message.value.getNext()
-              );
-              break;`;
-              });
-          })
-      ).join('\n')}
-    }
-  }
-}
-`);
-}
-
-function generateRPC(writer: PrettyWriter, program: Program): void {
-  writer.write('export namespace RPC {\n');
-
-  const rpc = program.getRPC();
-
-  for (const message of rpc.getCases()) {
-    // const object = message.type.asObject();
-    // generateObject(writer, object);
-  }
-
-  // generateEnum(writer, rpc);
-  generateSessionClass(writer, program);
-
-  writer.write('}\n');
 }

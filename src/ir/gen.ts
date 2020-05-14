@@ -23,6 +23,8 @@ const RESERVED_NAMES = new Set<string>([
   'where', 'while', 'abstract', 'alignof', 'become', 'box', 'do', 'final',
   'macro', 'offsetof', 'override', 'priv', 'proc', 'pure', 'sizeof', 'typeof',
   'unsized', 'virtual', 'yield',
+  // Other rust names:
+  'vec'
 ]);
 
 export function genIR(ast: AST.Root) {

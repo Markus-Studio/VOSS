@@ -4,7 +4,7 @@ import { join, basename, dirname } from 'path';
 import { genIR } from './ir/gen';
 import { Program } from './ir/program';
 import { generateTypescriptClient } from './backend/typescript';
-import { generateRustServer } from './backend/rust';
+import { generateRustServer } from './backend/r';
 import { toOutputName } from './utils';
 
 const filename = process.argv[2] || 'test.voss';
