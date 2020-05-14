@@ -1,38 +1,5 @@
-import { PrettyWriter } from './writer';
-import { Program } from '../ir/program';
-import { generateObjectStruct, generateEnum } from './rust';
-
-export function generateRPC(writer: PrettyWriter, program: Program): void {
-  writer.write(`pub mod rpc {
-  use super::voss_runtime::{VossReader, VossBuilder};
-  use super::voss_runtime;
-  use actix::*;
-  use actix_web_actors::ws;
-  use actix::prelude::{Message};
-  use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
-  use rand::{self, rngs::ThreadRng, Rng};
-  use std::collections::{HashMap, HashSet};
-  use actix_web::web::Bytes;
-
-  const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
-  const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);\n`);
-
-  const rpc = program.getRPC();
-
-  for (const message of rpc.getCases()) {
-    const object = message.type.asObject();
-    generateObjectStruct(writer, object, true);
-  }
-
-  generateEnum(writer, rpc);
-  generateEditor(writer, program);
-  generateWebSocket(writer, program);
-
-  writer.write('}\n');
-}
-
-function generateEditor(writer: PrettyWriter, program: Program): void {
-  writer.write(`
+pub mod rpc {
+  // ****************************** Editor ******************************
   #[derive(Message)]
   #[rtype(result = "()")]
   pub struct BinaryMessage(pub Bytes);
@@ -111,11 +78,8 @@ function generateEditor(writer: PrettyWriter, program: Program): void {
       }
     }
   }
-  `);
-}
 
-function generateWebSocket(writer: PrettyWriter, program: Program) {
-  writer.write(`
+  // ****************************** Session ******************************
   pub struct WsSession {
     id: u32,
     hb: Instant,
@@ -232,5 +196,4 @@ function generateWebSocket(writer: PrettyWriter, program: Program) {
     let duration = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
     duration.as_millis() as f64
   }
-  `);
 }

@@ -112,6 +112,18 @@ export class EnumMemberComponent extends Component {
   }
 }
 
+export class ModComponent extends Component {
+  render() {
+    const name = this.attr('name');
+    const pub = this.attr('pub');
+    this.context.writer.writeLine(`${pub ? 'pub ' : ''}mod ${name} {`);
+    this.context.writer.indent();
+    this.content();
+    this.context.writer.dedent();
+    this.context.writer.writeLine('}');
+  }
+}
+
 export function register(context: Context) {
   context.component('struct', StructComponent);
   context.component('struct-member', StructMemberComponent);
@@ -121,4 +133,5 @@ export function register(context: Context) {
   context.component('self-parameter', SelfParameterComponent);
   context.component('enum', EnumComponent);
   context.component('enum-member', EnumMemberComponent);
+  context.component('mod', ModComponent);
 }

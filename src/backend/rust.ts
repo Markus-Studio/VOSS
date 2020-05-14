@@ -1,16 +1,17 @@
 import {
   PrimitiveTypeName,
-  IRType,
-  IRObject,
   IRObjectField,
   IREnum,
   Program,
+  IRType,
+  IREnumCase,
+  IRObject,
 } from '../ir';
-import { PrettyWriter } from './writer';
-import { getObjectFieldPrivateType } from '../utils';
-import { fastPow2Log2, enumEqual } from '../../runtime/utils';
-import { runtime } from './rust.runtime';
-import { generateRPC } from './rust.rpc';
+import { Context } from '../template/context';
+import { register } from '../template/collections/rust';
+import { readFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fastPow2Log2 } from '../../runtime/utils';
 
 export const PRIMITIVE_TYPE: Record<PrimitiveTypeName, string> = {
   hash16: 'voss_runtime::HASH16',
@@ -27,220 +28,83 @@ export const PRIMITIVE_TYPE: Record<PrimitiveTypeName, string> = {
   str: 'String',
 };
 
+function typename(type: IRType): string {
+  if (type.isPrimitive) {
+    return PRIMITIVE_TYPE[type.asPrimitiveName()];
+  }
+
+  if (type.isRootObject) {
+    return PRIMITIVE_TYPE.hash16;
+  }
+
+  return type.pascalCase;
+}
+
+function alignmentPow2(object: IRObject): number {
+  return fastPow2Log2(object.getMaxElementAlignment());
+}
+
+function serialize(field: IRObjectField): string {
+  let uri = 'self.' + field.snakeCase;
+  const offset = field.getOffset();
+  const writeFn: string = field.type.isRootObject
+    ? 'hash16'
+    : field.type.isObject
+    ? 'object'
+    : field.type.isEnum
+    ? 'oneof'
+    : field.type.asPrimitiveName();
+  if (isRef(field.type)) uri = '&' + uri;
+  return `builder.${writeFn}(${offset}, ${uri})?;`;
+}
+
+function deserialize(field: IRObjectField): string {
+  const uri = field.snakeCase;
+  const offset = field.getOffset();
+  const writeFn: string = field.type.isRootObject
+    ? 'hash16'
+    : field.type.isObject
+    ? `object::<${field.type.pascalCase}>`
+    : field.type.isEnum
+    ? 'oneof'
+    : field.type.asPrimitiveName();
+  return `${uri}: reader.${writeFn}(${offset})?,`;
+}
+
+
 export function generateRustServer(program: Program): string {
-  const writer = new PrettyWriter();
+  const context = new Context();
+  register(context);
 
-  writer.write('#![allow(dead_code)]\n');
-  writer.write(runtime + '\n');
+  context.pipe('type', typename);
+  context.pipe('alignmentPow2', alignmentPow2);
+  context.pipe('serialize', serialize);
+  context.pipe('deserialize', deserialize);
 
-  for (const object of program.getObjects()) {
-    generateObjectStruct(writer, object);
-  }
+  context.bind('objects', [...program.getObjects()]);
+  context.bind('enums', [...program.getEnums()]);
+  context.bind('rpc', program.getRPC());
 
-  for (const oneof of program.getEnums()) {
-    generateEnum(writer, oneof);
-  }
+  const runtime = readFileSync(
+    join(dirname(require.main!.filename), '../resources/runtime.rs'),
+    'utf-8'
+  );
 
-  generateRPC(writer, program);
+  const rpc = readFileSync(
+    join(dirname(require.main!.filename), '../resources/rpc.rs'),
+    'utf-8'
+  );
 
-  return writer.getSource();
-}
+  const template = readFileSync(
+    join(dirname(require.main!.filename), '../resources/rust.template'),
+    'utf-8'
+  );
 
-export function generateObjectStruct(
-  writer: PrettyWriter,
-  object: IRObject,
-  inRPC = false
-): void {
-  writer.write(`#[derive(Clone, Debug, PartialEq)]
-  pub struct ${object.pascalCase} {\n`);
-  for (const field of object.getFields()) {
-    writer.write(field.snakeCase + ': ');
-    writer.write(getObjectFieldPrivateType(PRIMITIVE_TYPE, field.type) + ',\n');
-  }
-  writer.write(`}\n`);
+  context.writer.write(runtime);
+  context.run(template);
+  context.writer.write(rpc);
 
-  generateObjectImplVossStruct(writer, object);
-  generateObjectImplFromReader(writer, object);
-  generateObjectImpl(writer, object, inRPC);
-}
-
-function generateObjectImplVossStruct(
-  writer: PrettyWriter,
-  object: IRObject
-): void {
-  const name = object.pascalCase;
-  writer.write(`impl voss_runtime::VossStruct for ${name} {
-    fn alignment_pow2(&self) -> usize {
-        ${fastPow2Log2(object.getMaxElementAlignment())}
-    }
-
-    fn size(&self) -> usize {
-        ${object.getSize()}
-    }
-
-    fn serialize(
-        &self,
-        builder: &mut voss_runtime::VossBuilder,
-    ) -> Result<(), voss_runtime::BuilderError> {
-        ${[...object.getFields()]
-          .map((field) => {
-            let uri = 'self.' + field.snakeCase;
-            const offset = field.getOffset();
-            const writeFn: string = field.type.isRootObject
-              ? 'hash16'
-              : field.type.isObject
-              ? 'object'
-              : field.type.isEnum
-              ? 'oneof'
-              : field.type.asPrimitiveName();
-            if (isRef(field.type)) uri = '&' + uri;
-            return `builder.${writeFn}(${offset}, ${uri})?;`;
-          })
-          .join('\n')}
-        Ok(())
-    }
-  }\n`);
-}
-
-function generateObjectImplFromReader(
-  writer: PrettyWriter,
-  object: IRObject
-): void {
-  const name = object.pascalCase;
-  writer.write(`impl voss_runtime::FromReader for ${name} {
-      fn from_reader(reader: &voss_runtime::VossReader) -> Result<Self, voss_runtime::ReaderError> {
-        Ok(${name} {
-        ${[...object.getFields()]
-          .map((field) => {
-            const uri = field.snakeCase;
-            const offset = field.getOffset();
-            const writeFn: string = field.type.isRootObject
-              ? 'hash16'
-              : field.type.isObject
-              ? `object::<${field.type.pascalCase}>`
-              : field.type.isEnum
-              ? 'oneof'
-              : field.type.asPrimitiveName();
-            return `${uri}: reader.${writeFn}(${offset})?,`;
-          })
-          .join('\n')}
-        })
-      }
-  }\n`);
-}
-
-function generateObjectImpl(
-  writer: PrettyWriter,
-  object: IRObject,
-  inRPC: boolean
-) {
-  const name = object.pascalCase;
-  writer.write(`impl ${name} {
-    pub fn new(
-      ${[...object.getFields()]
-        .map((field) => {
-          let type = field.type.isPrimitive
-            ? PRIMITIVE_TYPE[field.type.asPrimitiveName()]
-            : field.type.isRootObject
-            ? `&${inRPC ? 'super::' : ''}${field.type.pascalCase}`
-            : field.type.pascalCase;
-          return `${field.snakeCase}: ${type},`;
-        })
-        .join('\n')}
-    ) -> ${name} {
-      ${name} {
-        ${[...object.getFields()]
-          .map((field) => {
-            let name = field.snakeCase;
-            let uri = field.type.isRootObject ? `*${name}.get_uuid()` : '';
-            return uri ? `${name}: ${uri},` : `${name},`;
-          })
-          .join('\n')}
-      }
-    }\n`);
-
-  for (const field of object.getFields()) {
-    generateObjectPropertyGetter(writer, field);
-    if (field.name !== 'uuid') {
-      // generateObjectPropertySetter(writer, field);
-    }
-  }
-
-  writer.write(`}\n`);
-}
-
-function generateObjectPropertyGetter(
-  writer: PrettyWriter,
-  field: IRObjectField
-) {
-  const name = field.snakeCase.startsWith('_')
-    ? '_get' + field.snakeCase
-    : 'get_' + field.snakeCase;
-  const type = getObjectFieldPrivateType(PRIMITIVE_TYPE, field.type);
-  const ref = isRef(field.type) ? '&' : '';
-  writer.write(`pub fn ${name}(&self) -> ${ref}${type} {
-    ${ref}self.${field.snakeCase}
-  }\n`);
-}
-
-export function generateEnum(writer: PrettyWriter, oneof: IREnum) {
-  const derive = ['Clone', 'Debug', 'PartialEq'];
-  writer.write(`#[derive(${derive.join(', ')})]
-  pub enum ${oneof.pascalCase} {
-    ${[...oneof.getCases()]
-      .map((enumCase) => {
-        return `${enumCase.pascalCase}(${enumCase.type.pascalCase}),`;
-      })
-      .join('\n')}
-  }\n`);
-
-  generateEnumImplVossEnum(writer, oneof);
-  generateEnumImplFromReader(writer, oneof);
-}
-
-function generateEnumImplVossEnum(writer: PrettyWriter, oneof: IREnum) {
-  const name = oneof.pascalCase;
-  writer.write(`impl<'a> voss_runtime::VossEnum<'a> for ${name} {
-    fn get_type(&self) -> u32 {
-      match &self {
-        ${[...oneof.getCases()]
-          .map((enumCase) => {
-            const caseTag = enumCase.value;
-            return `${name}::${enumCase.pascalCase}(_) => ${caseTag},`;
-          })
-          .join('\n')}
-      }
-    }
-
-    fn get_value(&'a self) -> &'a dyn voss_runtime::VossStruct {
-      match &self {
-        ${[...oneof.getCases()]
-          .map((enumCase) => {
-            return `${name}::${enumCase.pascalCase}(v) => v,`;
-          })
-          .join('\n')}
-      }
-    }
-  }\n`);
-}
-
-function generateEnumImplFromReader(writer: PrettyWriter, oneof: IREnum) {
-  const name = oneof.pascalCase;
-  writer.write(`impl voss_runtime::FromReader for ${name} {
-    fn from_reader(reader: &voss_runtime::VossReader) -> Result<Self, voss_runtime::ReaderError> {
-      match reader.u32(0)? {
-        ${[...oneof.getCases()]
-          .map((enumCase) => {
-            const caseName = enumCase.pascalCase;
-            const caseTag = enumCase.value;
-            const typeName = enumCase.type.pascalCase;
-            return `${caseTag} => Ok(${name}::${caseName}(reader.object::<${typeName}>(4)?)),`;
-          })
-          .join('\n')}
-        _ => Err(voss_runtime::ReaderError::InvalidBuffer)
-      }
-    }
-  }`);
+  return context.data();
 }
 
 function isRef(type: IRType): boolean {
