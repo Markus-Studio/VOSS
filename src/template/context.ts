@@ -11,6 +11,7 @@ import {
   LineComponent,
   TemplateComponent,
   RenderComponent,
+  WithIndent,
 } from './collections/builtin';
 import { toPascalCase, toCamelCase, toSnakeCase } from '../utils';
 import { compile } from './compiler';
@@ -33,6 +34,7 @@ export class Context {
     this.component('for', ForComponent);
     this.component('template', TemplateComponent);
     this.component('render', RenderComponent);
+    this.component('with-indent', WithIndent);
     this.pipe('pascal', toPascalCase);
     this.pipe('camel', toCamelCase);
     this.pipe('snake', toSnakeCase);

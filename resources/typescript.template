@@ -14,7 +14,7 @@ type HASH20 = string;
       [type]="field.type | type" />
   </interface>
 
-  <!-- The class for the root objects -->
+  <!-- ****************************** ROOT OBJECTS ****************************** -->
   <class
     *if="object.isRoot"
     [name]="object.pascalCase"
@@ -53,6 +53,7 @@ type HASH20 = string;
     <render template="object-base" />
   </class>
 
+  <!-- ****************************** SREUCTURE ****************************** -->
   <render template="object-struct" *if="object.isRoot != true" />
 </container>
 
@@ -61,6 +62,35 @@ type HASH20 = string;
 
 <!-- ****************************** RPC ****************************** -->
 namespace RPC {
+<with-indent value="1">
+
+  <container *for="let message in rpc.getCases | call">
+    <bind name="object" [value]="message.type.asObject | call" />
+
+    <!-- The $Data interface -->
+    <interface [name]="object.pascalCase + '$Data'">
+      <interface-member
+        *for="let field in object.getFields | call"
+        [name]="field.camelCase"
+        [type]="field.type | type"
+        readonly />
+    </interface>
+
+    <class
+      [name]="object.pascalCase"
+      implement="voss.Struct"
+      exported>
+      constructor(readonly data: {{ object.pascalCase }}$Data) {}
+      <render template="object-base" />
+    </class>
+  </container>
+
+  <container>
+    <bind name="enum" [value]="rpc" />
+    <render template="voss-enum" />
+  </container>
+
+</with-indent>
 }
 
 <!-- ****************************** TEMPLATES ****************************** -->
@@ -168,26 +198,24 @@ namespace RPC {
 
 <!-- ENUM TEMPLATE -->
 <template name="voss-enum">
-  <enum [name]="enum.pascalCase + '$Type'">
+  <enum [name]="enum.pascalCase + '$Type'" exported>
     <enum-member
       *for="let member in enum.getCases | call"
       [name]="member.pascalCase"
       [value]="member.value"
       exported/>
   </enum>
-
   export type {{ enum.pascalCase }} =
   <line
     *for="let member in enum.getCases | call"
     *indent="1"
     [value]="member | enumMember" />
   <line *indent="1" value=";" />
-
+  <line value=" " />
   export const {{ enum.pascalCase + '$DeserializerMap'  }}: {{ enum | enumDeserializerType }} = {
     <line
       *for="let member in enum.getCases | call"
       *indent="1"
       [value]="member | enumDeserializer" />
-  }
-
+  <line value="}" />
 </template>

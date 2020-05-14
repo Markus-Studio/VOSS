@@ -126,6 +126,7 @@ export function generateTypescriptClient(program: Program): string {
 
   context.bind('objects', [...program.getObjects()]);
   context.bind('enums', [...program.getEnums()]);
+  context.bind('rpc', program.getRPC());
 
   const template = readFileSync(
     join(dirname(require.main!.filename), '../resources/typescript.template'),
@@ -224,7 +225,7 @@ function generateRPC(writer: PrettyWriter, program: Program): void {
   const rpc = program.getRPC();
 
   for (const message of rpc.getCases()) {
-    const object = message.type.asObject();
+    // const object = message.type.asObject();
     // generateObject(writer, object);
   }
 
