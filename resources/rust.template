@@ -21,44 +21,32 @@
 <render *for="let enum in enums" template="voss-enum" />
 
 <!-- ****************************** RPC ****************************** -->
-<mod name="rpc" pub>
-  use super::voss_runtime::{VossReader, VossBuilder};
-  use super::voss_runtime;
-  use actix::*;
-  use actix_web_actors::ws;
-  use actix::prelude::{Message};
-  use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
-  use rand::{self, rngs::ThreadRng, Rng};
-  use std::collections::{HashMap, HashSet};
-  use actix_web::web::Bytes;
+<!-- Build RPC message data -->
+<container *for="let message in rpc.getCases | call">
+  <bind name="object" [value]="message.type.asObject | call" />
+  <struct
+    [name]="object.pascalCase"
+    pub
+    derive-Clone
+    derive-Debug
+    derive-PartialEq>
+    <struct-member
+      *for="let field in object.getFields | call"
+      [name]="field.snakeCase"
+      [type]="field.type | type"
+      pub />
+  </struct>
 
-  const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
-  const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);
+  <render template="object-base-impl" />
+</container>
 
-  <!-- Build RPC message data -->
-  <container *for="let message in rpc.getCases | call">
-    <bind name="object" [value]="message.type.asObject | call" />
-    <struct
-      [name]="object.pascalCase"
-      pub
-      derive-Clone
-      derive-Debug
-      derive-PartialEq>
-      <struct-member
-        *for="let field in object.getFields | call"
-        [name]="field.snakeCase"
-        [type]="field.type | type"
-        pub />
-    </struct>
-  </container>
+<!-- Enum for all of the RPC messages -->
+<container>
+  <bind name="enum" [value]="rpc" />
+  <render template="voss-enum" />
+</container>
 
-  <!-- Enum for all of the RPC messages -->
-  <container>
-    <bind name="enum" [value]="rpc" />
-    <render template="voss-enum" />
-  </container>
-</mod>
-
+<!-- ****************************** TEMPLATES ****************************** -->
 <template name="object-base-impl">
   <impl name="voss_runtime::VossStruct" [for]="object.pascalCase">
     <method name="alignment_pow2" type="usize">
@@ -139,7 +127,7 @@
       <parameter name="reader" type="voss_runtime::VossReader" ref />
       match reader.u32(0)? {
         <container *indent="1" *for="let case in enum.getCases | call">
-          Ok({{enum.pascalCase}}::{{case.pascalCase}}(reader.object::&lt;{{case.type.pascalCase}}&gt;(4)?)),
+          {{case.value}} => Ok({{enum.pascalCase}}::{{case.pascalCase}}(reader.object::&lt;{{case.type.pascalCase}}&gt;(4)?)),
         </container>
         _ => Err(voss_runtime::ReaderError::InvalidBuffer)
       }

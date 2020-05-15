@@ -1,10 +1,8 @@
 import {
   PrimitiveTypeName,
   IRObjectField,
-  IREnum,
   Program,
   IRType,
-  IREnumCase,
   IRObject,
 } from '../ir';
 import { Context } from '../template/context';
@@ -40,6 +38,18 @@ function typename(type: IRType): string {
   return type.pascalCase;
 }
 
+function rpcType(type: IRType): string {
+  if (type.isPrimitive) {
+    return PRIMITIVE_TYPE[type.asPrimitiveName()];
+  }
+
+  if (type.isRootObject) {
+    return PRIMITIVE_TYPE.hash16;
+  }
+
+  return 'super::' + type.pascalCase;
+}
+
 function alignmentPow2(object: IRObject): number {
   return fastPow2Log2(object.getMaxElementAlignment());
 }
@@ -71,12 +81,12 @@ function deserialize(field: IRObjectField): string {
   return `${uri}: reader.${writeFn}(${offset})?,`;
 }
 
-
 export function generateRustServer(program: Program): string {
   const context = new Context();
   register(context);
 
   context.pipe('type', typename);
+  context.pipe('rpcType', rpcType);
   context.pipe('alignmentPow2', alignmentPow2);
   context.pipe('serialize', serialize);
   context.pipe('deserialize', deserialize);
@@ -100,11 +110,9 @@ export function generateRustServer(program: Program): string {
     'utf-8'
   );
 
-  context.writer.write(runtime);
   context.run(template);
-  context.writer.write(rpc);
 
-  return context.data();
+  return runtime + '\n' + context.data() + '\n' + rpc;
 }
 
 function isRef(type: IRType): boolean {
