@@ -4,3 +4,4 @@ grammar
 .vscode
 target
 *-voss*
+dist

@@ -4,6 +4,7 @@ pub mod voss_runtime {
     use std::fmt;
     use std::fmt::Write;
     use std::u8;
+    use serde::{Serialize, Deserialize};
 
     #[derive(PartialEq, Eq, Copy, Clone, Hash)]
     pub struct HASH16([u8; 16]);

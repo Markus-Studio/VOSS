@@ -1,27 +1,7 @@
-struct Color {
-  r: u8;
-  g: u8;
-  b: u8;
+object Member {
+  group: Group;
 }
 
-struct Vec2 {
-  x: f64;
-  y: f64;
-}
-
-struct Vec3 {
-  x: f64;
-  y: f64;
-  z: f64;
-}
-
-oneof Position {
-  Vec2,
-  Vec3
-}
-
-object Rect {
-  color: Color;
-  name: str;
-  position: Position;
+object Group {
+  @View(Member, group) members;
 }

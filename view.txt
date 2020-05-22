@@ -16,7 +16,7 @@ class Target {
     return Target
       .viaView
       .get_or_insert(session, || Map())
-      .get_or_insert(self, || View(async || {
+      .get_or_insert(object, || View(async || {
         // If rootTargetView is loaded, then we don't need to send
         // a request to the server, all of the data is still there.
         await session.sendRequest(FetchViaView());

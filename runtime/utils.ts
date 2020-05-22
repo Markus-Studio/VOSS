@@ -66,3 +66,14 @@ export function enumEqual(a: EnumCase, b: EnumCase): boolean {
 export function delay(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(() => r(), ms));
 }
+
+export function getOrInsert<K extends object, V>(
+  map: WeakMap<K, V>,
+  key: K,
+  valueCb: () => V
+): V {
+  if (map.has(key)) return map.get(key)!;
+  const value = valueCb();
+  map.set(key, value);
+  return value;
+}

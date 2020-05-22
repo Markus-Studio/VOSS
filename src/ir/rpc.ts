@@ -2,8 +2,7 @@ import { IREnum, IREnumCase } from './enum';
 import { Program } from './program';
 import { IRObject } from './object';
 import { IRObjectField } from './field';
-import { toPascalCase } from '../utils';
-import { IRView } from './view';
+import { u32FromBytesVecLE, createUniqueID } from '../utils';
 
 const enum RPCMessageCategory {
   Clock = 0,
@@ -47,7 +46,7 @@ export function buildRPC(program: Program): IREnum {
 
     let counter = 0;
     for (const field of object.getFields()) {
-      if (field.isViewed()) {
+      if (field.isViewed) {
         rpcMessages.addCase(buildFetchViewMessage(program, field, counter++));
       }
 
@@ -248,37 +247,4 @@ function buildCreateMessage(program: Program, object: IRObject): IREnumCase {
     messageData.getType(),
     messageID
   );
-}
-
-type Vec4 = [number, number, number, number];
-
-function u32FromBytesVecLE(vec4: Vec4) {
-  let number = 0;
-  number += vec4[0] << (8 * 0);
-  number += vec4[1] << (8 * 1);
-  number += vec4[2] << (8 * 2);
-  number += vec4[3] << (8 * 3);
-  return number;
-}
-
-function u32ToBytesVecLE(value: number): Vec4 {
-  const vec: Vec4 = [0, 0, 0, 0];
-  value |= 0;
-  vec[0] = (value >> (8 * 0)) & 255;
-  vec[1] = (value >> (8 * 1)) & 255;
-  vec[2] = (value >> (8 * 2)) & 255;
-  vec[3] = (value >> (8 * 3)) & 255;
-  return vec;
-}
-
-function createUniqueID(
-  category: RPCMessageCategory,
-  objectID: number,
-  fieldID: number = 0
-): number {
-  if (category > 255 || category < 0) throw new Error('Category overflow.');
-  if (objectID > 65535 || objectID < 0) throw new Error('Object ID overflow.');
-  if (fieldID > 255 || fieldID < 0) throw new Error('Field ID overflow.');
-  const o = u32ToBytesVecLE(objectID);
-  return u32FromBytesVecLE([category, o[0], o[1], fieldID]);
 }

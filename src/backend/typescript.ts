@@ -105,6 +105,12 @@ function enumDeserializerType(irEnum: IREnum): string {
   return `Record<${irEnum.pascalCase}$Type, voss.DeserializeFn<any>>`;
 }
 
+function fieldViewMap(field: IRObjectField): string {
+  const type = field.type.pascalCase;
+  const target = field.getOwner().pascalCase;
+  return `new WeakMap<RPC.VossSession, Map<${type}, voss.View<${target}>>>()`;
+}
+
 export function generateTypescriptClient(program: Program): string {
   const context = new Context();
   register(context);
@@ -119,6 +125,7 @@ export function generateTypescriptClient(program: Program): string {
   context.pipe('enumMember', enumMember);
   context.pipe('enumDeserializer', enumDeserializer);
   context.pipe('enumDeserializerType', enumDeserializerType);
+  context.pipe('fieldViewMap', fieldViewMap);
 
   context.bind('objects', [...program.getObjects()]);
   context.bind('enums', [...program.getEnums()]);

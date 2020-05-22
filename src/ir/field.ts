@@ -49,7 +49,7 @@ export class IRObjectField {
     }
   }
 
-  isViewed(): boolean {
+  get isViewed(): boolean {
     return this.subjectedViews.size > 0;
   }
 

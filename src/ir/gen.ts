@@ -10,7 +10,7 @@ import * as toposort from 'toposort';
 // prettier-ignore
 const RESERVED_NAMES = new Set<string>([
   // VOSS Keywords.
-  'uuid', 'voss_session', 'rpc',
+  'uuid', 'voss_session', 'rpc', 'voss_action',
   // JS Keywords.
   'break', 'case', 'catch', 'continue', 'debugger', 'default', 'delete', 'do',
   'else', 'finally', 'for', 'function', 'if', 'in', 'instanceof', 'new', 'with',

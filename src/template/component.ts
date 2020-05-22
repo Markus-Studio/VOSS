@@ -62,6 +62,7 @@ export abstract class Component {
       throw new Error('Content() requires an active context.');
     }
 
+    this.context.table.push();
     for (const child of this.currentChildren) {
       if (constructor && !(child instanceof constructor)) {
         continue;
@@ -71,6 +72,7 @@ export abstract class Component {
       if (sep) this.context.writer.write(sep);
       this.currentChildren.delete(child);
     }
+    this.context.table.pop();
   }
 
   push(child: Component) {

@@ -16,6 +16,8 @@ if (!filename) {
 const filePath = join(process.cwd(), filename);
 
 const source = readFileSync(filePath, 'utf-8');
+
+console.time('voss time');
 const tree = parse(source);
 let program: Program;
 try {
@@ -28,6 +30,8 @@ try {
 
 const typescriptSource = generateTypescriptClient(program);
 const rustSource = generateRustServer(program);
+console.timeEnd('voss time');
+
 const outPath = join(dirname(filePath), toOutputName(basename(filePath)));
 writeFileSync(outPath + '.ts', typescriptSource);
 writeFileSync(outPath + '.rs', rustSource);

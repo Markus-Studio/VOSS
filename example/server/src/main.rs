@@ -17,7 +17,7 @@ async fn ws_route(
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
-    let editor = voss::rpc::EditorServer::open("Test").start();
+    let editor = voss::rpc::EditorServer::open("data/project1").unwrap().start();
 
     HttpServer::new(move || {
         App::new()

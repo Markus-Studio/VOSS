@@ -94,6 +94,11 @@ export function generateRustServer(program: Program): string {
   context.bind('objects', [...program.getObjects()]);
   context.bind('enums', [...program.getEnums()]);
   context.bind('rpc', program.getRPC());
+  context.bind('vcs', program.getVCS());
+  context.bind(
+    'root',
+    [...program.getObjects()].filter((obj) => obj.isRoot)
+  );
 
   const runtime = readFileSync(
     join(dirname(require.main!.filename), '../resources/runtime.rs'),

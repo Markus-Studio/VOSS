@@ -46,6 +46,56 @@
   <render template="voss-enum" />
 </container>
 
+<!-- ****************************** VCS ****************************** -->
+<!-- VCS Actions -->
+<container *for="let message in vcs.getCases | call">
+  <bind name="object" [value]="message.type.asObject | call" />
+  <struct
+    [name]="object.pascalCase"
+    pub
+    derive-Clone
+    derive-Debug
+    derive-PartialEq>
+    <struct-member
+      *for="let field in object.getFields | call"
+      [name]="field.snakeCase"
+      [type]="field.type | type"
+      pub />
+  </struct>
+
+  <render template="object-base-impl" />
+</container>
+
+<!-- Enum for all the actions -->
+<container>
+  <bind name="enum" [value]="vcs" />
+  <render template="voss-enum" />
+</container>
+
+<!-- RootObject enum can be used for storing all of the objects in the program -->
+<enum
+  name="RooObject"
+  pub
+  derive-Clone
+  derive-Debug
+  derive-PartialEq>
+  <enum-member
+    *for="let obj in root"
+    [name]="obj.pascalCase"
+    [type]="'Box<' + obj.pascalCase + '>'" />
+</enum>
+
+// Handle RPC messages sent from users to the editor server.
+use actix::*;
+impl Handler&lt;rpc::EditorMessage&gt; for rpc::EditorServer {
+  type Result = ();
+
+  #[inline(always)]
+  fn handle(&mut self, rpc::EditorMessage(user, msg): rpc::EditorMessage, _: &mut Context&lt;Self&gt;) -> Self::Result {
+  }
+}
+
+
 <!-- ****************************** TEMPLATES ****************************** -->
 <template name="object-base-impl">
   <impl name="voss_runtime::VossStruct" [for]="object.pascalCase">

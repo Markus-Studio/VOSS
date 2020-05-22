@@ -6,11 +6,33 @@ pub mod rpc {
     use actix_web::web::Bytes;
     use actix_web_actors::ws;
     use rand::{self, rngs::ThreadRng, Rng};
-    use std::collections::{HashMap, HashSet};
+    use std::collections::{HashMap, BTreeSet};
     use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+    use serde::{Serialize, Deserialize};
+    use std::sync::Arc;
+    use rocksdb::DB;
 
     const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
     const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);
+
+    // Messages sent from websocket to editor;
+    #[derive(Message)]
+    #[rtype(result = "()")]
+    pub struct EditorMessage(pub u32, pub super::RPCMessage);
+
+    // ****************************** Scope ******************************
+    pub struct Scope {
+        pub editor: Arc<EditorServer>,
+        pub members: BTreeSet<u32>,
+        pub objects: HashMap<voss_runtime::HASH16, super::RooObject>,
+        pub live: Vec<super::VossAction>
+    }
+
+    // ****************************** VCS DS ******************************
+    pub struct Commit {
+        pub parent: voss_runtime::HASH20,
+        pub actions: Vec<super::VossAction>
+    }
 
     // ****************************** Editor ******************************
     #[derive(Message)]
@@ -30,34 +52,34 @@ pub mod rpc {
     }
 
     pub struct EditorServer {
+        db: DB,
         sessions: HashMap<u32, Recipient<BinaryMessage>>,
-        scope_members: HashMap<voss_runtime::HASH20, HashSet<u32>>,
+        scopes: HashMap<voss_runtime::HASH20, Scope>,
         rng: ThreadRng,
     }
 
     impl EditorServer {
-        pub fn open(name: &str) -> EditorServer {
-            EditorServer {
+        pub fn open(path: &str) -> Result<EditorServer, ()> {
+            Ok(EditorServer {
+                db: DB::open_default(path).map_err(|_| { () })?,
                 sessions: HashMap::new(),
-                scope_members: HashMap::new(),
+                scopes: HashMap::new(),
                 rng: rand::thread_rng(),
-            }
+            })
         }
 
-        fn broadcast(
+        pub fn broadcast(
             &self,
             message: super::RPCMessage,
-            scope: &voss_runtime::HASH20,
+            scope: &Scope,
             skip_id: u32,
         ) {
             let msg = VossBuilder::serialize_enum(&message).unwrap();
             let data = Bytes::from(msg);
-            if let Some(sessions) = self.scope_members.get(&scope) {
-                for id in sessions {
-                    if *id != skip_id {
-                        if let Some(addr) = self.sessions.get(id) {
-                            let _ = addr.do_send(BinaryMessage(data.clone()));
-                        }
+            for id in &scope.members {
+                if *id != skip_id {
+                    if let Some(addr) = self.sessions.get(id) {
+                        addr.do_send(BinaryMessage(data.clone()));
                     }
                 }
             }
@@ -88,8 +110,8 @@ pub mod rpc {
 
         fn handle(&mut self, msg: Disconnect, _: &mut Context<Self>) -> Self::Result {
             if self.sessions.remove(&msg.id).is_some() {
-                for (_, sessions) in &mut self.scope_members {
-                    if sessions.remove(&msg.id) {
+                for (_, scope) in &mut self.scopes {
+                    if scope.members.remove(&msg.id) {
                         break;
                     }
                 }
@@ -180,7 +202,9 @@ pub mod rpc {
                     let result = super::RPCMessage::Clock(super::ClockMessage { timestamp: now() });
                     ctx.binary(VossBuilder::serialize_enum(&result).unwrap());
                 }
-                _ => unimplemented!(),
+                msg => {
+                  self.editor.do_send(EditorMessage(self.id, msg));
+                }
             }
         }
     }

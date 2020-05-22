@@ -2,12 +2,13 @@ import { IRObject } from './object';
 import { IRType } from './type';
 import { IREnum } from './enum';
 import { buildRPC } from './rpc';
+import { buildVCS } from './vcs';
+import memorize from 'memorize-decorator';
 
 export class Program {
   private readonly usedNames = new Set<string>();
   private readonly objects = new Map<string, IRObject>();
   private readonly enums = new Map<string, IREnum>();
-  private _rpc?: IREnum;
 
   resolveType(name: string): IRType {
     if (IRType.isPrimitive(name)) {
@@ -75,10 +76,13 @@ export class Program {
     return this.objects.values();
   }
 
+  @memorize()
   getRPC() {
-    if (this._rpc) {
-      return this._rpc;
-    }
-    return (this._rpc = buildRPC(this));
+    return buildRPC(this);
+  }
+
+  @memorize()
+  getVCS() {
+    return buildVCS(this);
   }
 }

@@ -26,6 +26,22 @@ type HASH20 = string;
       super();
     }
 
+    <!-- View Containers (for viewed objects) -->
+    <container *for="let field in object.getFields | call" *if="field.isViewed">
+      <property
+        [name]="field.camelCase + 'View'"
+        [default]="field | fieldViewMap"
+        static readonly />
+
+    </container>
+
+    <!-- View Accessors -->
+    <container *for="let view in object.getViews | call">
+      <method [name]="'view' + view.pascalCase">
+        <parameter name="session" type="RPC.VossSession" />
+      </method>
+    </container>
+
     <!-- Getter/Setters -->
     <container *for="let field in object.getFields | call">
       <render template="object-getter" />
@@ -36,7 +52,8 @@ type HASH20 = string;
         [name]="'set' + field.pascalCase">
         <parameter name="session" type="RPC.VossSession" />
         <parameter name="value" [type]="field | fieldSetterType" />
-        this.data.{{field.camelCase}} = value;
+        const current = this.data.{{field.camelCase}};
+        const next = this.data.{{field.camelCase}} = {{ field | fieldSetterValue }};
         this.emitChange();
         return session.sendRequest((replyId, timestamp) => ({
             type: RPC.RPCMessage$Type.{{field.rpcGetSetCase | call}},
@@ -44,8 +61,7 @@ type HASH20 = string;
               replyId,
               timestamp,
               target: this.data.uuid,
-              current: this.data.{{field.camelCase}},
-              next: {{ field | fieldSetterValue }},
+              current, next
             })
         }));
       </method>
