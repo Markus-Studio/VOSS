@@ -32,13 +32,28 @@ type HASH20 = string;
         [name]="field.camelCase + 'View'"
         [default]="field | fieldViewMap"
         static readonly />
-
+      
+      <method [name]="'get' + field.pascalCase + 'ViewFor'" static>
+        <parameter name="session" type="RPC.VossSession" />
+        <parameter name="object" [type]="field.type.pascalCase" />
+        const views = voss.getOrInsert({{object.pascalCase}}.{{field.camelCase}}View, session, () => new Map());
+        return voss.getOrInsert(views, object, () => new voss.View(async () => {
+          await session.sendRequest((replyId: number) => ({
+            type: RPC.RPCMessage$Type.{{field.rpcGetFetchViewCase | call}},
+            value: new RPC.{{field.rpcGetFetchViewMsg | call}}({
+              replyId,
+              host: object.getUuid()
+            })
+          }))
+        }));
+      </method>
     </container>
 
     <!-- View Accessors -->
     <container *for="let view in object.getViews | call">
-      <method [name]="'view' + view.pascalCase">
+      <method [name]="'view' + view.pascalCase" [type]="'voss.ReadonlyView<' + view.target.pascalCase + '>'">
         <parameter name="session" type="RPC.VossSession" />
+        return {{ view.target.pascalCase }}.get{{view.via.pascalCase}}ViewFor(session, this);
       </method>
     </container>
 
