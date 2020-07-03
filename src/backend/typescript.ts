@@ -8,8 +8,7 @@ import {
 } from '../ir';
 import { Context } from '../template/context';
 import { register } from '../template/collections/typescript';
-import { readFileSync } from 'fs';
-import { join, dirname } from 'path';
+import { load } from '../resources';
 
 const PRIMITIVE_TYPE: Record<PrimitiveTypeName, string> = {
   hash16: 'HASH16',
@@ -39,7 +38,7 @@ function typename(type: IRType): string {
 }
 
 function objectBase(name: string) {
-  return `voss.ObjectBase<${name}$Data>`;
+  return `voss.ObjectBase<${name}$Data, RPC.VossSession>`;
 }
 
 function encoder(type: IRType): string {
@@ -106,9 +105,8 @@ function enumDeserializerType(irEnum: IREnum): string {
 }
 
 function fieldViewMap(field: IRObjectField): string {
-  const type = field.type.pascalCase;
   const target = field.getOwner().pascalCase;
-  return `new WeakMap<RPC.VossSession, Map<${type}, voss.View<${target}>>>()`;
+  return `new WeakMap<RPC.VossSession, Map<HASH16, voss.View<${target}>>>()`;
 }
 
 export function generateTypescriptClient(program: Program): string {
@@ -131,10 +129,7 @@ export function generateTypescriptClient(program: Program): string {
   context.bind('enums', [...program.getEnums()]);
   context.bind('rpc', program.getRPC());
 
-  const template = readFileSync(
-    join(dirname(require.main!.filename), '../resources/typescript.template'),
-    'utf-8'
-  );
+  const template = load('typescript.template');
   context.run(template);
 
   return context.data();

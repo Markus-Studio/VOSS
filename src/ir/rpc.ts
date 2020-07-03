@@ -107,7 +107,7 @@ function buildRootFetchMessage(program: Program, object: IRObject): IREnumCase {
     new IRObjectField('replyId', program.resolveType('u32'))
   );
   return new IREnumCase(
-    object.rpcGetFetchAllMsg(),
+    object.rpcGetFetchAllCase(),
     messageData.getType(),
     messageID
   );

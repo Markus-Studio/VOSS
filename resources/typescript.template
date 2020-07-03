@@ -35,14 +35,14 @@ type HASH20 = string;
       
       <method [name]="'get' + field.pascalCase + 'ViewFor'" static>
         <parameter name="session" type="RPC.VossSession" />
-        <parameter name="object" [type]="field.type.pascalCase" />
+        <parameter name="object" type="HASH16" />
         const views = voss.getOrInsert({{object.pascalCase}}.{{field.camelCase}}View, session, () => new Map());
         return voss.getOrInsert(views, object, () => new voss.View(async () => {
           await session.sendRequest((replyId: number) => ({
             type: RPC.RPCMessage$Type.{{field.rpcGetFetchViewCase | call}},
             value: new RPC.{{field.rpcGetFetchViewMsg | call}}({
               replyId,
-              host: object.getUuid()
+              host: object
             })
           }))
         }));
@@ -53,9 +53,31 @@ type HASH20 = string;
     <container *for="let view in object.getViews | call">
       <method [name]="'view' + view.pascalCase" [type]="'voss.ReadonlyView<' + view.target.pascalCase + '>'">
         <parameter name="session" type="RPC.VossSession" />
-        return {{ view.target.pascalCase }}.get{{view.via.pascalCase}}ViewFor(session, this);
+        return {{ view.target.pascalCase }}.get{{view.via.pascalCase}}ViewFor(session, this.getUuid());
       </method>
     </container>
+
+    <!-- View init -->
+    <method name="init">
+      <parameter name="session" type="RPC.VossSession" />
+      <container *for="let field in object.getFields | call" *if="field.isViewed">
+        {{object.pascalCase}}.get{{field.pascalCase}}ViewFor(session, this.data.{{field.camelCase}}).add(this);
+      </container>
+    </method>
+
+    <method name="updated">
+      <parameter name="session" type="RPC.VossSession" />
+      <parameter name="key" />
+      <parameter name="prev" />
+      switch (key) {
+        <container *for="let field in object.getFields | call" *if="field.isViewed">
+          case "{{field.camelCase}}":
+            {{object.pascalCase}}.get{{field.pascalCase}}ViewFor(session, prev).remove(this);
+            {{object.pascalCase}}.get{{field.pascalCase}}ViewFor(session, this.data.{{field.camelCase}}).add(this);
+            break;
+        </container>
+      }
+    </method>
 
     <!-- Getter/Setters -->
     <container *for="let field in object.getFields | call">
@@ -124,7 +146,7 @@ export namespace RPC {
 
   export class VossSession extends voss.VossSessionBase&lt;RPCMessage&gt; {
     protected hostID?: number;
-    protected objects = new Map&lt;string, voss.ObjectBase&lt;any&gt;&gt;();
+    protected objects = new Map&lt;string, voss.ObjectBase&lt;any, VossSession&gt;&gt;();
     protected deserializeMap = RPCMessage$DeserializerMap;
 
     async fetchObjectByUUID(uuid: string): Promise&lt;any&gt; {
@@ -155,7 +177,7 @@ export namespace RPC {
     protected CAS(uuid: string, field: string, current: any, next: any): void {
       const object = this.objects.get(uuid);
       if (!object) return;
-      if (object.CAS(field, current, next)) return;
+      if (object.CAS(this, field, current, next)) return;
       // Conflict.
       throw new Error('Cannot handle conflict.');
     }

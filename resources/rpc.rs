@@ -20,14 +20,6 @@ pub mod rpc {
     #[rtype(result = "()")]
     pub struct EditorMessage(pub u32, pub super::RPCMessage);
 
-    // ****************************** Scope ******************************
-    pub struct Scope {
-        pub editor: Arc<EditorServer>,
-        pub members: BTreeSet<u32>,
-        pub objects: HashMap<voss_runtime::HASH16, super::RooObject>,
-        pub live: Vec<super::VossAction>
-    }
-
     // ****************************** VCS DS ******************************
     pub struct Commit {
         pub parent: voss_runtime::HASH20,
@@ -54,8 +46,9 @@ pub mod rpc {
     pub struct EditorServer {
         db: DB,
         sessions: HashMap<u32, Recipient<BinaryMessage>>,
-        scopes: HashMap<voss_runtime::HASH20, Scope>,
         rng: ThreadRng,
+        pub objects: HashMap<voss_runtime::HASH16, super::RooObject>,
+        pub live: Vec<super::VossAction>
     }
 
     impl EditorServer {
@@ -63,24 +56,22 @@ pub mod rpc {
             Ok(EditorServer {
                 db: DB::open_default(path).map_err(|_| { () })?,
                 sessions: HashMap::new(),
-                scopes: HashMap::new(),
                 rng: rand::thread_rng(),
+                objects: HashMap::new(),
+                live: Vec::new()
             })
         }
 
         pub fn broadcast(
             &self,
             message: super::RPCMessage,
-            scope: &Scope,
             skip_id: u32,
         ) {
             let msg = VossBuilder::serialize_enum(&message).unwrap();
             let data = Bytes::from(msg);
-            for id in &scope.members {
+            for (id, addr) in &self.sessions {
                 if *id != skip_id {
-                    if let Some(addr) = self.sessions.get(id) {
-                        addr.do_send(BinaryMessage(data.clone()));
-                    }
+                    add.do_send(BinaryMessage(data.clone()));
                 }
             }
         }

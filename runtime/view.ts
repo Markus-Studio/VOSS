@@ -8,6 +8,7 @@ export enum ViewStatus {
 export interface ReadonlyView<T> {
   readonly status: ViewStatus;
   members(): ReadonlySet<T>;
+  load(): Promise<void>;
 }
 
 export class View<T> implements ReadonlyView<T> {

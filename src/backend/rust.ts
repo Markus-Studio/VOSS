@@ -10,6 +10,7 @@ import { register } from '../template/collections/rust';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fastPow2Log2 } from '../../runtime/utils';
+import { load } from '../resources';
 
 export const PRIMITIVE_TYPE: Record<PrimitiveTypeName, string> = {
   hash16: 'voss_runtime::HASH16',
@@ -100,20 +101,9 @@ export function generateRustServer(program: Program): string {
     [...program.getObjects()].filter((obj) => obj.isRoot)
   );
 
-  const runtime = readFileSync(
-    join(dirname(require.main!.filename), '../resources/runtime.rs'),
-    'utf-8'
-  );
-
-  const rpc = readFileSync(
-    join(dirname(require.main!.filename), '../resources/rpc.rs'),
-    'utf-8'
-  );
-
-  const template = readFileSync(
-    join(dirname(require.main!.filename), '../resources/rust.template'),
-    'utf-8'
-  );
+  const runtime = load('runtime.rs');
+  const rpc = load('rpc.rs');
+  const template = 'rust.template';
 
   context.run(template);
 

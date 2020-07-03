@@ -7,7 +7,7 @@ import { generateTypescriptClient } from './backend/typescript';
 import { generateRustServer } from './backend/rust';
 import { toOutputName } from './utils';
 
-const filename = process.argv[2] || 'test.voss';
+const filename = process.argv[2];
 if (!filename) {
   console.error(`usage: ${process.argv[0]} ${process.argv[1]} <filename>`);
   process.exit(-1);

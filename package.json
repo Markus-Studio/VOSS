@@ -1,13 +1,15 @@
 {
   "name": "voss",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "main": "index.js",
   "author": "Parsa Ghadimi <qti3eqti3e@gmail.com>",
   "license": "MIT",
   "scripts": {
     "grammar": "antlr4ts -o grammar Voss.g4",
-    "fmt": "prettier --write 'src/**/*.ts' 'runtime/**/*.ts'"
+    "fmt": "prettier --write 'src/**/*.ts' 'runtime/**/*.ts'",
+    "build": "yarn grammar && tsc"
   },
+  "bin": "dist/src/main.js",
   "dependencies": {
     "antlr4ts": "^0.5.0-alpha.3",
     "lodash": "^4.17.15",

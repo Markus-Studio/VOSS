@@ -67,8 +67,16 @@ export function delay(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(() => r(), ms));
 }
 
-type MapValue<T> = T extends WeakMap<any, infer V> ? V : never;
-type MapKey<T> = T extends WeakMap<infer K, any> ? K : never;
+type MapValue<T> = T extends WeakMap<any, infer V>
+  ? V
+  : T extends ReadonlyMap<any, infer V>
+  ? V
+  : never;
+type MapKey<T> = T extends WeakMap<infer K, any>
+  ? K
+  : T extends ReadonlyMap<infer K, any>
+  ? K
+  : never;
 
 export function getOrInsert<T extends WeakMap<any, any>>(
   map: T,
