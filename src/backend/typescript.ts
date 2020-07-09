@@ -1,14 +1,5 @@
-import {
-  PrimitiveTypeName,
-  IRObjectField,
-  IREnum,
-  Program,
-  IRType,
-  IREnumCase,
-} from '../ir';
-import { Context } from '../template/context';
-import { register } from '../template/collections/typescript';
-import { load } from '../resources';
+import { PrimitiveTypeName, IRObjectField, Program, IRType } from '../ir';
+import template from '../templates/dist/typescript';
 
 const PRIMITIVE_TYPE: Record<PrimitiveTypeName, string> = {
   hash16: 'HASH16',
@@ -35,10 +26,6 @@ function typename(type: IRType): string {
   }
 
   return type.pascalCase;
-}
-
-function objectBase(name: string) {
-  return `voss.ObjectBase<${name}$Data, RPC.VossSession>`;
 }
 
 function encoder(type: IRType): string {
@@ -90,52 +77,6 @@ function fieldSetterType(field: IRObjectField): string {
   return typename(field.type);
 }
 
-function enumMember(member: IREnumCase): string {
-  const typeEnumName = member.getOwner().pascalCase + '$Type';
-  return `| voss.EnumCase<${typeEnumName}.${member.pascalCase}, ${member.type.pascalCase}>`;
-}
-
-function enumDeserializer(member: IREnumCase): string {
-  const typeEnumName = member.getOwner().pascalCase + '$Type';
-  return `[${typeEnumName}.${member.pascalCase}]: ${member.type.pascalCase}.deserialize,`;
-}
-
-function enumDeserializerType(irEnum: IREnum): string {
-  return `Record<${irEnum.pascalCase}$Type, voss.DeserializeFn<any>>`;
-}
-
-function fieldViewMap(field: IRObjectField): string {
-  const target = field.getOwner().pascalCase;
-  return `new WeakMap<RPC.VossSession, Map<HASH16, voss.View<${target}>>>()`;
-}
-
-export function _generateTypescriptClient(program: Program): string {
-  const context = new Context();
-  register(context);
-
-  context.pipe('type', typename);
-  context.pipe('objectBase', objectBase);
-  context.pipe('encoder', encoder);
-  context.pipe('sortForEqual', sortForEqual);
-  context.pipe('equal', equalTemplate);
-  context.pipe('fieldSetterValue', fieldSetterValue);
-  context.pipe('fieldSetterType', fieldSetterType);
-  context.pipe('enumMember', enumMember);
-  context.pipe('enumDeserializer', enumDeserializer);
-  context.pipe('enumDeserializerType', enumDeserializerType);
-  context.pipe('fieldViewMap', fieldViewMap);
-
-  context.bind('objects', [...program.getObjects()]);
-  context.bind('enums', [...program.getEnums()]);
-  context.bind('rpc', program.getRPC());
-
-  const template = load('typescript.template');
-  context.run(template);
-
-  return context.data();
-}
-
-import template from '../../templates/dist/typescript';
 export function generateTypescriptClient(program: Program): string {
   return template({
     objects: [...program.getObjects()],
@@ -147,6 +88,6 @@ export function generateTypescriptClient(program: Program): string {
     fieldSetterValue,
     sortForEqual,
     equalTemplate,
-    encoder
+    encoder,
   });
 }

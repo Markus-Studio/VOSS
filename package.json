@@ -7,7 +7,10 @@
   "scripts": {
     "grammar": "antlr4ts -o grammar Voss.g4",
     "fmt": "prettier --write 'src/**/*.ts' 'runtime/**/*.ts'",
-    "build": "yarn grammar && tsc"
+    "build": "yarn grammar && yarn tblk && tsc",
+    "tblk": "yarn tblk:ts && yarn tblk:rs",
+    "tblk:ts": "tblk -config src/templates/typescript.tblk.json",
+    "tblk:rs": "tblk -config src/templates/typescript.tblk.json"
   },
   "bin": "dist/src/main.js",
   "dependencies": {

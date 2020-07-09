@@ -58,8 +58,7 @@ export class IRObjectField {
   }
 
   get isReadonly(): boolean {
-    if (!this.isAttached())
-      throw new Error('Field is not attached.');
+    if (!this.isAttached()) throw new Error('Field is not attached.');
     return !(this.owner!.isRoot && this.name !== 'uuid');
   }
 

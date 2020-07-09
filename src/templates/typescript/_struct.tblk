@@ -7,6 +7,7 @@ export class <% object.pascalCase %> implements voss.Struct {
   set<% field.pascalCase %>(value: <% fieldSetterType(field) %>) {
     return new <% object.pascalCase %>({...this.data, <% field.camelCase %>: <% fieldSetterValue(field) %>});
   }
+
 <% /for %>
 
   <% #structBase %>

@@ -6,6 +6,7 @@ type HASH20 = string;
 
 <% for object in objects %>
 <% #object object=object %>
+
 <% /for %>
 
 <% for oneof in enums %>
