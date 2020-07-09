@@ -32,7 +32,7 @@ export function toOutputName(basename: string): string {
 }
 
 export function flatten<T>(data: T[] | T[][]): T[] {
-  return data.flat();
+  return data.flat() as any;
 }
 
 export function getObjectFieldPrivateType(

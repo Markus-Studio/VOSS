@@ -1,0 +1,28 @@
+#[derive(Clone, Debug, PartialEq)]
+pub struct <% object.pascalCase %> {
+<% for field in object.getFields() %>
+    <% field.snakeCase %>: <% typename(field.type) %>,
+<% /for %>
+}
+
+impl voss_runtime::VossStruct for <% object.pascalCase %> {
+    fn alignment_pow2(&self) -> usize { <% fastPow2Log2(object.getMaxElementAlignment()) %>  }
+    fn size(&self) -> usize { <% object.getSize() %> }
+
+    fn serialize(&self, &mut builder: voss_runtime::VossBuilder) -> Result<(), voss_runtime::BuilderError> {
+<% for field in object.getFields() %>
+        <% serialize(field) %>
+<% /for %>
+        Ok(())
+    }
+}
+
+impl voss_runtime::FromReader for <% object.pascalCase %> {
+    fn from_reader(&reader: voss_runtime::VossReader) -> Result<Self, voss_runtime::ReaderError> {
+        Ok(<% object.pascalCase %> {
+<% for field in object.getFields() %>
+            <% deserialize(field) %>
+<% /for %>
+        })
+    }
+}

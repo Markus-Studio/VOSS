@@ -1,0 +1,44 @@
+<% #runtime %>
+
+<% for object in objects %>
+<% #object object=object %>
+<% /for %>
+
+<!-- ***************************** ENUMS ***************************** -->
+<% for oneof in enums %>
+<% #oneof oneof=oneof %>
+<% /for %>
+
+<!-- ****************************** RPC ****************************** -->
+<% for message in rpc.getCases() %>
+<% #object object=message.type.asObject() %>
+<% /for %>
+
+<% #oneof oneof=rpc %>
+
+<!-- ****************************** VCS ****************************** -->
+<% for message in vcs.getCases() %>
+<% #object object=message.type.asObject() %>
+<% /for %>
+
+<% #oneof oneof=vcs %>
+
+<!-- RootObject enum can be used for storing all of the objects in the program -->
+#[derive(Clone, Debug, PartialEq)]
+pub enum RooObject {
+<% for obj in root %>
+    <% obj.pascalCase %>(Box<<% obj.pascalCase %>>),
+<% /for %>
+}
+
+// Handle RPC messages sent from users to the editor server.
+use actix::*;
+impl Handler&lt;rpc::EditorMessage&gt; for rpc::EditorServer {
+    type Result = ();
+
+    #[inline(always)]
+    fn handle(&mut self, rpc::EditorMessage(user, msg): rpc::EditorMessage, _: &mut Context&lt;Self&gt;) -> Self::Result {
+    }
+}
+
+<% #rpc %>

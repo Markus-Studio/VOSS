@@ -194,7 +194,7 @@ pub mod rpc {
                     ctx.binary(VossBuilder::serialize_enum(&result).unwrap());
                 }
                 msg => {
-                  self.editor.do_send(EditorMessage(self.id, msg));
+                    self.editor.do_send(EditorMessage(self.id, msg));
                 }
             }
         }

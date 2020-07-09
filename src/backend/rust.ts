@@ -1,16 +1,6 @@
-import {
-  PrimitiveTypeName,
-  IRObjectField,
-  Program,
-  IRType,
-  IRObject,
-} from '../ir';
-import { Context } from '../template/context';
-import { register } from '../template/collections/rust';
-import { readFileSync } from 'fs';
-import { join, dirname } from 'path';
+import { PrimitiveTypeName, IRObjectField, Program, IRType } from '../ir';
 import { fastPow2Log2 } from '../../runtime/utils';
-import { load } from '../resources';
+import template from '../templates/dist/rust';
 
 export const PRIMITIVE_TYPE: Record<PrimitiveTypeName, string> = {
   hash16: 'voss_runtime::HASH16',
@@ -37,22 +27,6 @@ function typename(type: IRType): string {
   }
 
   return type.pascalCase;
-}
-
-function rpcType(type: IRType): string {
-  if (type.isPrimitive) {
-    return PRIMITIVE_TYPE[type.asPrimitiveName()];
-  }
-
-  if (type.isRootObject) {
-    return PRIMITIVE_TYPE.hash16;
-  }
-
-  return 'super::' + type.pascalCase;
-}
-
-function alignmentPow2(object: IRObject): number {
-  return fastPow2Log2(object.getMaxElementAlignment());
 }
 
 function serialize(field: IRObjectField): string {
@@ -82,34 +56,6 @@ function deserialize(field: IRObjectField): string {
   return `${uri}: reader.${writeFn}(${offset})?,`;
 }
 
-export function generateRustServer(program: Program): string {
-  const context = new Context();
-  register(context);
-
-  context.pipe('type', typename);
-  context.pipe('rpcType', rpcType);
-  context.pipe('alignmentPow2', alignmentPow2);
-  context.pipe('serialize', serialize);
-  context.pipe('deserialize', deserialize);
-
-  context.bind('objects', [...program.getObjects()]);
-  context.bind('enums', [...program.getEnums()]);
-  context.bind('rpc', program.getRPC());
-  context.bind('vcs', program.getVCS());
-  context.bind(
-    'root',
-    [...program.getObjects()].filter((obj) => obj.isRoot)
-  );
-
-  const runtime = load('runtime.rs');
-  const rpc = load('rpc.rs');
-  const template = 'rust.template';
-
-  context.run(template);
-
-  return runtime + '\n' + context.data() + '\n' + rpc;
-}
-
 function isRef(type: IRType): boolean {
   return !(
     type.isPrimitive &&
@@ -117,4 +63,19 @@ function isRef(type: IRType): boolean {
     type.name !== 'hash16' &&
     type.name !== 'hash20'
   );
+}
+
+export function generateRustServer(program: Program): string {
+  return template({
+    objects: [...program.getObjects()],
+    enums: [...program.getEnums()],
+    rpc: program.getRPC(),
+    vcs: program.getVCS(),
+    root: [...program.getObjects()].filter((obj) => obj.isRoot),
+    // Helper functions:
+    typename,
+    deserialize,
+    serialize,
+    fastPow2Log2,
+  });
 }

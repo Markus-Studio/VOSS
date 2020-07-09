@@ -1,0 +1,35 @@
+#[derive(Clone, Debug, PartialEq)]
+pub enum <% oneof.pascalCase %> {
+<% for c in oneof.getCases() %>
+    <% c.pascalCase %>(<% c.type.pascalCase %>),
+<% /for %>
+}
+
+impl<'a> voss_runtime::VossEnum<'a> for <% oneof.pascalCase %> {
+    fn get_type(&self) -> u32 {
+        match &self {
+<% for c in oneof.getCases() %>
+            <% oneof.pascalCase %>::<% c.pascalCase %>(_) => <% c.value %>,
+<% /for %>
+        }
+    }
+
+    fn get_value(&'a self) -> &'a dyn voss_runtime::VossStruct {
+        match &self {
+<% for c in oneof.getCases() %>
+            <% oneof.pascalCase %>::<% c.pascalCase %>(v) => v,
+<% /for %>
+        }
+    }
+}
+
+impl voss_runtime::FromReader for <% oneof.pascalCase %> {
+    fn from_reader(&reader: voss_runtime::VossReader) -> Result<Self, voss_runtime::ReaderError> {
+        match reader.u32(0)? {
+    <% for c in oneof.getCases() %>
+            <% c.value %> => Ok(<% oneof.pascalCase %>::<% c.pascalCase %>(reader.object::<<% c.type.pascalCase %>>(4)?)),
+    <% /for %>
+            _ => Err(voss_runtime::ReaderError::InvalidBuffer)
+        }
+    }
+}

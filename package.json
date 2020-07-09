@@ -10,7 +10,7 @@
     "build": "yarn grammar && yarn tblk && tsc",
     "tblk": "yarn tblk:ts && yarn tblk:rs",
     "tblk:ts": "tblk -config src/templates/typescript.tblk.json",
-    "tblk:rs": "tblk -config src/templates/typescript.tblk.json"
+    "tblk:rs": "tblk -config src/templates/rust.tblk.json"
   },
   "bin": "dist/src/main.js",
   "dependencies": {
