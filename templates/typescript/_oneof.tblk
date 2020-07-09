@@ -1,0 +1,17 @@
+export enum <% oneof.pascalCase %>$Type {
+<% for member in oneof.getCases() %>
+  <% member.pascalCase %> = <% member.value %>,
+<% /for %>
+}
+
+export type <% oneof.pascalCase %> =
+<% for member in oneof.getCases() %>
+  | voss.EnumCase<<% oneof.pascalCase %>$Type.<% member.pascalCase %>, <% member.type.pascalCase %>>
+<% /for %>
+  ;
+
+export const <% oneof.pascalCase %>$DeserializerMap: Record<<% oneof.pascalCase %>$Type, voss.DeserializeFn<any>> = {
+<% for member in oneof.getCases() %>
+  [<% oneof.pascalCase %>$Type.<% member.pascalCase %>]: <% member.type.pascalCase %>.deserialize,
+<% /for %>
+};

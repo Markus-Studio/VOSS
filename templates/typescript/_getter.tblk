@@ -1,0 +1,9 @@
+<% if field.type.isRootObject %>
+fetch<% field.pascalCase %>(session: RPC.VossSession) {
+  return session.fetchObjectByUUID(this.data.<% field.camelCase %>);
+}
+<% else %>
+get<% field.pascalCase %>() {
+  return this.data.<% field.camelCase %>;
+}
+<% /if %>

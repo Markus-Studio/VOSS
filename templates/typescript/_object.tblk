@@ -1,0 +1,12 @@
+
+interface <% object.pascalCase %>$Data {
+  <% for field in object.getFields() %>
+  <% field.camelCase %>: <% typename(field.type) %>;
+  <% /for %>
+}
+
+<% if object.isRoot %>
+<% #root %>
+<% else %>
+<% #struct %>
+<% /if %>

@@ -1,0 +1,10 @@
+{
+  "outDir": "./dist/typescript",
+  "compilerOptions": {
+    "sourceMap": true,
+    "typescript": true
+  },
+  "include": [
+    "typescript/**/*.tblk"
+  ]
+}

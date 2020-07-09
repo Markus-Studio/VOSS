@@ -1,0 +1,72 @@
+export class <% object.pascalCase %> extends voss.ObjectBase<<% object.pascalCase %>$Data, RPC.VossSession> implements voss.Struct {
+  constructor(protected data: <% object.pascalCase %>$Data) {
+    super();
+  }
+
+  <% for field in object.getFields() |> field.isViewed %>
+  static readonly <% field.camelCase %>View = new WeakMap<
+    RPC.VossSession,
+    Map<HASH16, voss.View<<% object.pascalCase %>>>
+  >();
+
+  static get<% field.pascalCase %>ViewFor(session: RPC.VossSession, host: HASH16) {
+    const views = voss.getOrInsert(<% object.pascalCase %>.<% field.camelCase %>View, session, () => new Map());
+    return voss.getOrInsert(views, host, () => new voss.View(async () => {
+      await session.sendRequest((replyId: number) => ({
+        type: RPC.RPCMessage$Type.<% field.rpcGetFetchViewCase() %>,
+        value: new RPC.<% field.rpcGetFetchViewMsg() %>({
+          replyId,
+          host
+        })
+      }))
+    }));
+  }
+  <% /for %>
+
+  <% for view in object.getViews() %>
+  view<% view.pascalCase %>(session: RPC.VossSession): voss.ReadonlyView<<% view.target.pascalCase %>> {
+    return <% view.target.pascalCase %>.get<% view.via.pascalCase %>ViewFor(session, this.getUuid());
+  }
+  <% /for %>
+
+  init(session: RPC.VossSession) {
+  <% for field in object.getFields() |> field.isViewed %>
+    <% object.pascalCase %>.get<% field.pascalCase %>ViewFor(session, this.data.<% field.camelCase %>).add(this);
+  <% /for %>
+  }
+
+  updated(session: RPC.VossSession, key, prev) {
+    switch (key) {
+      <% for field in object.getFields() |> field.isViewed %>
+      case "<% field.camelCase %>":
+        <% object.pascalCase %>.get<% field.pascalCase %>ViewFor(session, prev).remove(this);
+        <% object.pascalCase %>.get<% field.pascalCase %>ViewFor(session, this.data.<% field.camelCase %>).add(this);
+        break;
+      <% /for %>
+    }
+  }
+
+<% for field in object.getFields() %>
+  <% #getter field=field %>
+
+  <% if !field.isReadonly %>
+  set<% field.pascalCase %>(session: RPC.VossSession, value: <% fieldSetterType(field) %>) {
+    const current = this.data.<% field.camelCase %>;
+    const next = this.data.<% field.camelCase %> = <% fieldSetterValue(field) %>;
+    this.updated(session, "<% field.camelCase %>", current);
+    this.emitChange();
+    return session.sendRequest((replyId, timestamp) => ({
+      type: RPC.RPCMessage$Type.<% field.rpcGetSetCase() %>,
+      value: new RPC.<% field.rpcGetSetMsg() %>({
+        replyId,
+        timestamp,
+        target: this.data.uuid,
+        current, next
+      })
+    }));
+  }
+  <% /if %>
+<% /for %>
+
+  <% #structBase %>
+}

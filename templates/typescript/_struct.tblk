@@ -1,0 +1,13 @@
+export class <% object.pascalCase %> implements voss.Struct {
+  constructor(protected data: <% object.pascalCase %>$Data) {}
+
+<% for field in object.getFields() %>
+  <% #getter field=field %>
+
+  set<% field.pascalCase %>(value: <% fieldSetterType(field) %>) {
+    return new <% object.pascalCase %>({...this.data, <% field.camelCase %>: <% fieldSetterValue(field) %>});
+  }
+<% /for %>
+
+  <% #structBase %>
+}

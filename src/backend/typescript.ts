@@ -59,7 +59,7 @@ function sortForEqual(fields: Iterable<IRObjectField>): IRObjectField[] {
   });
 }
 
-function equalCondition(field: IRObjectField): string {
+function equalTemplate(field: IRObjectField): string {
   const name = field.camelCase;
   if (field.type.isPrimitive || field.type.isRootObject) {
     return `this.data.${name} === other.data.${name}`;
@@ -109,7 +109,7 @@ function fieldViewMap(field: IRObjectField): string {
   return `new WeakMap<RPC.VossSession, Map<HASH16, voss.View<${target}>>>()`;
 }
 
-export function generateTypescriptClient(program: Program): string {
+export function _generateTypescriptClient(program: Program): string {
   const context = new Context();
   register(context);
 
@@ -117,7 +117,7 @@ export function generateTypescriptClient(program: Program): string {
   context.pipe('objectBase', objectBase);
   context.pipe('encoder', encoder);
   context.pipe('sortForEqual', sortForEqual);
-  context.pipe('equal', equalCondition);
+  context.pipe('equal', equalTemplate);
   context.pipe('fieldSetterValue', fieldSetterValue);
   context.pipe('fieldSetterType', fieldSetterType);
   context.pipe('enumMember', enumMember);
@@ -133,4 +133,20 @@ export function generateTypescriptClient(program: Program): string {
   context.run(template);
 
   return context.data();
+}
+
+import template from '../../templates/dist/typescript';
+export function generateTypescriptClient(program: Program): string {
+  return template({
+    objects: [...program.getObjects()],
+    enums: [...program.getEnums()],
+    rpc: program.getRPC(),
+    // Helper functions:
+    typename,
+    fieldSetterType,
+    fieldSetterValue,
+    sortForEqual,
+    equalTemplate,
+    encoder
+  });
 }

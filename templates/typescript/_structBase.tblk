@@ -1,0 +1,31 @@
+static readonly maxElementAlignment = <% object.getMaxElementAlignment() %>;
+static readonly size = <% object.getSize() %>;
+
+equal(other: <% object.pascalCase %>): boolean {
+  return (
+<% for field in sortForEqual(object.getFields()) %>
+    <% equalTemplate(field) %> &&
+<% /for %>
+    true
+  );
+}
+
+serialize(builder: voss.Builder) {
+<% for field in object.getFields() %>
+  builder.<% encoder(field.type) %>(<% field.getOffset() %>, this.data.<% field.camelCase %>);
+<% /for %>
+}
+
+static deserialize(reader: voss.Reader) {
+  return new <% object.pascalCase %>({
+<% for field in object.getFields() %>
+  <% if field.type.isPrimitive || field.type.isRootObject %>
+    <% field.camelCase %>: reader.<% encoder(field.type) %>(<% field.getOffset() %>),
+  <% else if field.type.isStructure %>
+    < % field.camelCase %>: reader.<% encoder(field.type) %>(<% field.getOffset() %>, <% field.type.pascalCase %>.deserialize),
+  <% else if field.type.isEnum %>
+    < % field.camelCase %>: reader.<% encoder(field.type) %>(<% field.getOffset() %>, <% field.type.pascalCase %>$DeserializerMap),
+  <% /if %>
+<% /for %>
+  });
+}

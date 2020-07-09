@@ -15,6 +15,7 @@
     "lodash": "^4.17.15",
     "memorize-decorator": "^0.2.2",
     "pluralize": "^8.0.0",
+    "tblk": "../tblk",
     "toposort": "^2.0.2"
   },
   "devDependencies": {

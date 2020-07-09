@@ -1,0 +1,10 @@
+{
+  "outDir": "./dist/rust",
+  "compilerOptions": {
+    "sourceMap": true,
+    "typescript": true
+  },
+  "include": [
+    "rust/**/*.tblk"
+  ]
+}
