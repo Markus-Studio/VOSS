@@ -15,7 +15,7 @@ type HASH20 = string;
 
 export namespace RPC {
 <% for message in rpc.getCases() %>
-  <% #object object=message.type.asObject() %>
+  <% #rpcObject object=message.type.asObject() %>
 <% /for %>
 
   <% #oneof oneof=rpc %>
@@ -61,13 +61,13 @@ export namespace RPC {
     protected onMessage(message: RPCMessage): void {
       switch (message.type) {
         case RPCMessage$Type.Reply:
-          this.receivedReply(message.value.getReplyId());
+          this.receivedReply(message.value.data.replyId);
           break;
         case RPCMessage$Type.Clock:
-          this.receivedTime(message.value.getTimestamp());
+          this.receivedTime(message.value.data.timestamp);
           break;
         case RPCMessage$Type.HostID:
-          this.hostID = message.value.getValue();
+          this.hostID = message.value.data.value;
           break;
       }
     }

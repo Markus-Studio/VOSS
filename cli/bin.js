@@ -33,14 +33,14 @@ options.input = path.join(process.cwd(), options.input);
 
 if (!options.ts || !options.rs) {
   const dirname = path.dirname(options.input);
-  const filename = utils.toOutputName(path.basename(options.basename));
+  const filename = utils.toOutputName(path.basename(options.input));
   const out = path.join(dirname, filename);
   options.ts = options.ts || (out + '.ts');
   options.rs = options.rs || (out + '.rs');
 }
 
 // Read the input.
-const source = fs.readFileSync(options.input);
+const source = fs.readFileSync(options.input, 'utf-8');
 
 // Compile VOSS files.
 function genIR(source) {
@@ -56,12 +56,12 @@ function genIR(source) {
 
 console.time('voss time');
 const program = genIR(source);
-const typescriptSource = generateTypescriptClient(program);
-const rustSource = generateRustServer(program);
+const typescriptSource = voss.generateTypescriptClient(program);
+const rustSource = voss.generateRustServer(program);
 console.timeEnd('voss time');
 
 // Write outputs.
-mkdirp.sync(process.dirname(options.ts));
+mkdirp.sync(path.dirname(options.ts));
 fs.writeFileSync(options.ts, typescriptSource);
-mkdirp.sync(process.dirname(options.rs));
+mkdirp.sync(path.dirname(options.rs));
 fs.writeFileSync(options.rs, rustSource);

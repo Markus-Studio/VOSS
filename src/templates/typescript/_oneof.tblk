@@ -1,4 +1,4 @@
-export enum <% oneof.pascalCase %>$Type {
+export const enum <% oneof.pascalCase %>$Type {
 <% for member in oneof.getCases() %>
   <% member.pascalCase %> = <% member.value %>,
 <% /for %>

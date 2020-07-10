@@ -3,6 +3,30 @@ export class <% object.pascalCase %> extends voss.ObjectBase<<% object.pascalCas
     super();
   }
 
+  private static readonly views = new WeakMap<
+    RPC.VossSession,
+    voss.View<<% object.pascalCase %>>
+  >();
+
+  private static getViewForSession(session: RPC.VossSession) {
+    return voss.getOrInsert(this.views, session, () => new voss.View(async () => {
+      await session.sendRequest((replyId: number) => ({
+        type: RPC.RPCMessage$Type.<% object.rpcGetFetchAllCase() %>,
+        value: new RPC.<% object.rpcGetFetchAllMsg() %>({replyId})
+      }))
+    }));
+  }
+
+  static all(session: RPC.VossSession): voss.ReadonlyView<<% object.pascalCase %>> {
+    return <% object.pascalCase %>.getViewForSession(session);
+  }
+
+  static async create(session: RPC.VossSession, data: <% object.pascalCase %>$Data): Promise<<% object.pascalCase %>> {
+    const obj = new <% object.pascalCase %>(data);
+    obj.init(session);
+    return obj;
+  }
+
   <% for field in object.getFields() |> field.isViewed %>
   static readonly <% field.camelCase %>View = new WeakMap<
     RPC.VossSession,
@@ -30,6 +54,7 @@ export class <% object.pascalCase %> extends voss.ObjectBase<<% object.pascalCas
   <% /for %>
 
   init(session: RPC.VossSession) {
+    <% object.pascalCase %>.getViewForSession(session).add(this);
   <% for field in object.getFields() |> field.isViewed %>
     <% object.pascalCase %>.get<% field.pascalCase %>ViewFor(session, this.data.<% field.camelCase %>).add(this);
   <% /for %>

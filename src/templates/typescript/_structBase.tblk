@@ -1,14 +1,16 @@
 static readonly maxElementAlignment = <% object.getMaxElementAlignment() %>;
 static readonly size = <% object.getSize() %>;
 
+<% if !no_equal %>
 equal(other: <% object.pascalCase %>): boolean {
   return (
-<% for field in sortForEqual(object.getFields()) %>
+  <% for field in sortForEqual(object.getFields()) %>
     <% equalTemplate(field) %> &&
-<% /for %>
+  <% /for %>
     true
   );
 }
+<% /if %>
 
 serialize(builder: voss.Builder) {
 <% for field in object.getFields() %>

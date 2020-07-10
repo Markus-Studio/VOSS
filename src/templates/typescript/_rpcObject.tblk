@@ -1,0 +1,14 @@
+
+interface <% object.pascalCase %>$Data {
+  <% for field in object.getFields() %>
+  <% field.camelCase %>: <% typename(field.type) %>;
+  <% /for %>
+}
+
+export class <% object.pascalCase %> implements voss.Struct {
+  constructor(readonly data: <% object.pascalCase %>$Data) {}
+
+  equal() { return false; }
+
+  <% #structBase no_equal=true %>
+}
