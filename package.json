@@ -13,14 +13,14 @@
     "tblk:rs": "tblk -config src/templates/rust.tblk.json"
   },
   "bin": {
-    "voss": "dist/src/main.js"
+    "voss": "./cli/bin.js"
   },
   "dependencies": {
     "antlr4ts": "^0.5.0-alpha.3",
     "lodash": "^4.17.15",
     "memorize-decorator": "^0.2.2",
+    "mkdirp": "^1.0.4",
     "pluralize": "^8.0.0",
-    "tblk": "../tblk",
     "toposort": "^2.0.2"
   },
   "devDependencies": {
@@ -30,6 +30,7 @@
     "@types/toposort": "^2.0.3",
     "antlr4ts-cli": "^0.5.0-alpha.3",
     "prettier": "^2.0.5",
+    "tblk": "../tblk",
     "ts-node": "^8.9.0",
     "tslib": "^1.11.1",
     "typescript": "^3.8.3"

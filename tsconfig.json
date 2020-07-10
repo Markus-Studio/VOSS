@@ -4,7 +4,7 @@
     "outDir": "./dist",
     "strict": true,
     "sourceMap": true,
-    "declaration": false,
+    "declaration": true,
     "experimentalDecorators": true,
     "downlevelIteration": true,
     "module": "commonjs",
