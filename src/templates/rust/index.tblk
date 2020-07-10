@@ -33,11 +33,11 @@ pub enum RooObject {
 
 // Handle RPC messages sent from users to the editor server.
 use actix::*;
-impl Handler&lt;rpc::EditorMessage&gt; for rpc::EditorServer {
+impl Handler<rpc::EditorMessage> for rpc::EditorServer {
     type Result = ();
 
     #[inline(always)]
-    fn handle(&mut self, rpc::EditorMessage(user, msg): rpc::EditorMessage, _: &mut Context&lt;Self&gt;) -> Self::Result {
+    fn handle(&mut self, rpc::EditorMessage(user, msg): rpc::EditorMessage, _: &mut Context<Self>) -> Self::Result {
     }
 }
 

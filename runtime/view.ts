@@ -1,3 +1,6 @@
+import { ChangeNotifier } from './types';
+import { IChangeNotifier } from './changeNotifier';
+
 export enum ViewStatus {
   Init,
   Loading,
@@ -5,17 +8,19 @@ export enum ViewStatus {
   Destroyed,
 }
 
-export interface ReadonlyView<T> {
+export interface ReadonlyView<T> extends ChangeNotifier {
   readonly status: ViewStatus;
   members(): ReadonlySet<T>;
   load(): Promise<void>;
 }
 
-export class View<T> implements ReadonlyView<T> {
+export class View<T> extends IChangeNotifier implements ReadonlyView<T> {
   private _status: ViewStatus = ViewStatus.Init;
   private _members: Set<T> = new Set();
 
-  constructor(private readonly callback: () => Promise<void>) {}
+  constructor(private readonly callback: () => Promise<void>) {
+    super();
+  }
 
   get status(): ViewStatus {
     return this._status;
@@ -27,10 +32,12 @@ export class View<T> implements ReadonlyView<T> {
 
   add(object: T) {
     this._members.add(object);
+    this.emitChange();
   }
 
   remove(object: T) {
     this._members.delete(object);
+    this.emitChange();
   }
 
   startedLoading() {
@@ -39,6 +46,7 @@ export class View<T> implements ReadonlyView<T> {
 
   finishedLoading() {
     this._status = ViewStatus.Loaded;
+    this.emitChange();
   }
 
   destroy() {

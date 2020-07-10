@@ -6,10 +6,8 @@ pub mod rpc {
     use actix_web::web::Bytes;
     use actix_web_actors::ws;
     use rand::{self, rngs::ThreadRng, Rng};
-    use std::collections::{HashMap, BTreeSet};
+    use std::collections::HashMap;
     use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
-    use serde::{Serialize, Deserialize};
-    use std::sync::Arc;
     use rocksdb::DB;
 
     const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
@@ -71,7 +69,7 @@ pub mod rpc {
             let data = Bytes::from(msg);
             for (id, addr) in &self.sessions {
                 if *id != skip_id {
-                    add.do_send(BinaryMessage(data.clone()));
+                    addr.do_send(BinaryMessage(data.clone()));
                 }
             }
         }
@@ -100,13 +98,7 @@ pub mod rpc {
         type Result = ();
 
         fn handle(&mut self, msg: Disconnect, _: &mut Context<Self>) -> Self::Result {
-            if self.sessions.remove(&msg.id).is_some() {
-                for (_, scope) in &mut self.scopes {
-                    if scope.members.remove(&msg.id) {
-                        break;
-                    }
-                }
-            }
+            self.sessions.remove(&msg.id);
         }
     }
 

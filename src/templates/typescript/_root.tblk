@@ -60,7 +60,7 @@ export class <% object.pascalCase %> extends voss.ObjectBase<<% object.pascalCas
   <% /for %>
   }
 
-  updated(session: RPC.VossSession, key, prev) {
+  updated<K extends keyof <% object.pascalCase %>$Data>(session: RPC.VossSession, key: K, prev: <% object.pascalCase %>$Data[K]) {
     switch (key) {
       <% for field in object.getFields() |> field.isViewed %>
       case "<% field.camelCase %>":

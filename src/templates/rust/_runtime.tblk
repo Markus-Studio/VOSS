@@ -4,7 +4,6 @@ pub mod voss_runtime {
     use std::fmt;
     use std::fmt::Write;
     use std::u8;
-    use serde::{Serialize, Deserialize};
 
     #[derive(PartialEq, Eq, Copy, Clone, Hash)]
     pub struct HASH16([u8; 16]);
@@ -544,6 +543,16 @@ pub mod voss_runtime {
                 self.data[offset + 6],
                 self.data[offset + 7],
             ]))
+        }
+
+        #[inline]
+        pub fn bool(&self, offset: usize) -> Result<bool, ReaderError> {
+            self.bound_check(offset, 1)?;
+            Ok(if self.data[self.current_offset.borrow().clone() + offset] == 0 {
+                false
+            } else {
+                true
+            })
         }
 
         #[inline]

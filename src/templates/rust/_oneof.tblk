@@ -24,7 +24,7 @@ impl<'a> voss_runtime::VossEnum<'a> for <% oneof.pascalCase %> {
 }
 
 impl voss_runtime::FromReader for <% oneof.pascalCase %> {
-    fn from_reader(&reader: voss_runtime::VossReader) -> Result<Self, voss_runtime::ReaderError> {
+    fn from_reader(reader: &voss_runtime::VossReader) -> Result<Self, voss_runtime::ReaderError> {
         match reader.u32(0)? {
     <% for c in oneof.getCases() %>
             <% c.value %> => Ok(<% oneof.pascalCase %>::<% c.pascalCase %>(reader.object::<<% c.type.pascalCase %>>(4)?)),
