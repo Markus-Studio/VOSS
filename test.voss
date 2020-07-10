@@ -1,7 +1,0 @@
-object Member {
-  group: Group;
-}
-
-object Group {
-  @View(Member, group) members;
-}

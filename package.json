@@ -1,7 +1,7 @@
 {
   "name": "voss",
   "version": "0.1.0",
-  "main": "index.js",
+  "main": "dist/src/lib.js",
   "author": "Parsa Ghadimi <qti3eqti3e@gmail.com>",
   "license": "MIT",
   "scripts": {
@@ -12,7 +12,9 @@
     "tblk:ts": "tblk -config src/templates/typescript.tblk.json",
     "tblk:rs": "tblk -config src/templates/rust.tblk.json"
   },
-  "bin": "dist/src/main.js",
+  "bin": {
+    "voss": "dist/src/main.js"
+  },
   "dependencies": {
     "antlr4ts": "^0.5.0-alpha.3",
     "lodash": "^4.17.15",

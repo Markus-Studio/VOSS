@@ -1,0 +1,9 @@
+object Group {
+  title: str;
+  @View(Task, group) tasks;
+}
+
+object Task {
+  title: str;
+  done: bool;
+}
