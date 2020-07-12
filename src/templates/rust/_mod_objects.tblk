@@ -1,0 +1,19 @@
+// This module contains all of the user defined objects.
+pub mod objects {
+    use super::voss_runtime;
+
+    <% for object in objects %>
+    <% #object object=object %>
+    <% /for %>
+
+    <% for oneof in enums %>
+    <% #oneof oneof=oneof %>
+    <% /for %>
+
+    #[derive(Clone, Debug, PartialEq)]
+    pub enum RooObject {
+    <% for obj in root %>
+        <% obj.pascalCase %>(Box<<% obj.pascalCase %>>),
+    <% /for %>
+    }
+}

@@ -1,12 +1,13 @@
-pub mod rpc {
+pub mod server {
     use super::voss_runtime;
     use super::voss_runtime::{VossBuilder, VossReader};
+    use super::{rpc, vcs, objects};
     use actix::prelude::Message;
     use actix::*;
     use actix_web::web::Bytes;
     use actix_web_actors::ws;
     use rand::{self, rngs::ThreadRng, Rng};
-    use std::collections::HashMap;
+    use std::collections::{HashMap, HashSet};
     use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
     use rocksdb::DB;
 
@@ -16,13 +17,7 @@ pub mod rpc {
     // Messages sent from websocket to editor;
     #[derive(Message)]
     #[rtype(result = "()")]
-    pub struct EditorMessage(pub u32, pub super::RPCMessage);
-
-    // ****************************** VCS DS ******************************
-    pub struct Commit {
-        pub parent: voss_runtime::HASH20,
-        pub actions: Vec<super::VossAction>
-    }
+    pub struct EditorMessage(pub u32, pub rpc::RPCMessage);
 
     // ****************************** Editor ******************************
     #[derive(Message)]
@@ -45,8 +40,8 @@ pub mod rpc {
         db: DB,
         sessions: HashMap<u32, Recipient<BinaryMessage>>,
         rng: ThreadRng,
-        pub objects: HashMap<voss_runtime::HASH16, super::RooObject>,
-        pub live: Vec<super::VossAction>
+        pub objects: HashMap<voss_runtime::HASH16, objects::RooObject>,
+        pub live: Vec<vcs::VossAction>
     }
 
     impl EditorServer {
@@ -62,7 +57,7 @@ pub mod rpc {
 
         pub fn broadcast(
             &self,
-            message: super::RPCMessage,
+            message: rpc::RPCMessage,
             skip_id: u32,
         ) {
             let msg = VossBuilder::serialize_enum(&message).unwrap();
@@ -127,7 +122,7 @@ pub mod rpc {
                         Ok(res) => {
                             act.id = res;
                             let msg =
-                                super::RPCMessage::HostID(super::HostIDMessage { value: res });
+                                rpc::RPCMessage::HostID(rpc::HostIDMessage { value: res });
                             ctx.binary(VossBuilder::serialize_enum(&msg).unwrap());
                         }
                         // something is wrong with the editor.
@@ -169,7 +164,7 @@ pub mod rpc {
                     return;
                 }
                 ws::Message::Binary(bin) => {
-                    match VossReader::deserialize_enum::<super::RPCMessage>(&bin) {
+                    match VossReader::deserialize_enum::<rpc::RPCMessage>(&bin) {
                         Ok(msg) => msg,
                         Err(_) => {
                             ctx.close(None);
@@ -181,8 +176,8 @@ pub mod rpc {
             };
 
             match msg {
-                super::RPCMessage::Clock(_) => {
-                    let result = super::RPCMessage::Clock(super::ClockMessage { timestamp: now() });
+                rpc::RPCMessage::Clock(_) => {
+                    let result = rpc::RPCMessage::Clock(rpc::ClockMessage { timestamp: now() });
                     ctx.binary(VossBuilder::serialize_enum(&result).unwrap());
                 }
                 msg => {
@@ -223,5 +218,15 @@ pub mod rpc {
     fn now() -> f64 {
         let duration = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
         duration.as_millis() as f64
+    }
+
+    // Handle RPC messages sent from users to the editor server.
+    impl Handler<EditorMessage> for EditorServer {
+        type Result = ();
+
+        #[inline(always)]
+        fn handle(&mut self, EditorMessage(user, msg): EditorMessage, _: &mut Context<Self>) -> Self::Result {
+            println!("{:?}", msg);
+        }
     }
 }

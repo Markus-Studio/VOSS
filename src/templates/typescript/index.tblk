@@ -6,7 +6,6 @@ type HASH20 = string;
 
 <% for object in objects %>
 <% #object object=object %>
-
 <% /for %>
 
 <% for oneof in enums %>
@@ -22,9 +21,9 @@ export namespace RPC {
 
   export class VossSession extends voss.VossSessionBase<RPCMessage> {
     protected hostID?: number;
-    protected objects = new Map<string, voss.ObjectBase<any, VossSession>>();
     protected deserializeMap = RPCMessage$DeserializerMap;
-    readonly loaded = voss.createResolvable<null>();
+    readonly objects = new Map<string, voss.ObjectBase<any, VossSession>>();
+    readonly loaded = voss.createResolvable<true>();
 
     async fetchObjectByUUID(uuid: string): Promise<any> {
       if (this.objects.has(uuid)) {
@@ -69,7 +68,7 @@ export namespace RPC {
           break;
         case RPCMessage$Type.HostID:
           this.hostID = message.value.data.value;
-          this.loaded.resolve();
+          this.loaded.resolve(true);
           break;
       }
     }

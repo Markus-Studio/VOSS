@@ -1,0 +1,10 @@
+/// All the RPC messages.
+pub mod rpc {
+    use super::voss_runtime;
+
+    <% for message in rpc.getCases() %>
+    <% #object object=message.type.asObject() %>
+    <% /for %>
+
+    <% #oneof oneof=rpc %>
+}

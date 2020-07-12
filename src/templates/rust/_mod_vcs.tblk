@@ -1,0 +1,10 @@
+/// All the VCS objects and enums.
+pub mod vcs {
+    use super::voss_runtime;
+
+    <% for message in vcs.getCases() %>
+    <% #object object=message.type.asObject() %>
+
+    <% /for %>
+    <% #oneof oneof=vcs %>
+}

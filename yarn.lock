@@ -181,8 +181,10 @@ source-map@^0.7.3:
   resolved "https://registry.yarnpkg.com/source-map/-/source-map-0.7.3.tgz#5302f8169031735226544092e64981f751750383"
   integrity sha512-CkCj6giN3S+n9qrYiBTX5gystlENnRW5jZeNLHpe6aue+SrHcG5VYwujhW9s4dY31mEGsxBDrHR6oI69fTXsaQ==
 
-tblk@../tblk:
-  version "0.1.0"
+tblk@^0.9.0:
+  version "0.9.0"
+  resolved "https://registry.yarnpkg.com/tblk/-/tblk-0.9.0.tgz#fdfcca017017b4b35312cd3149f78bddf7859f05"
+  integrity sha512-98QloIi2RAhRA6A2IMVwUdr4w5fiWzjbr/UwdjWJg9mBzOgk1nH0UiwY7CIcMzRYXKoK/hA2KoAB2A27O5SIxQ==
   dependencies:
     antlr4ts "^0.5.0-alpha.3"
     btoa "^1.2.1"

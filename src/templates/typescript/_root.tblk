@@ -21,10 +21,31 @@ export class <% object.pascalCase %> extends voss.ObjectBase<<% object.pascalCas
     return <% object.pascalCase %>.getViewForSession(session);
   }
 
-  static async create(session: RPC.VossSession, data: <% object.pascalCase %>$Data): Promise<<% object.pascalCase %>> {
+  static create(session: RPC.VossSession, data: <% object.pascalCase %>$Data): { obj: <% object.pascalCase %>, promise: Promise<void> } {
+    const promise = session.sendRequest((_replyId: number, _timestamp: number) => ({
+      type: RPC.RPCMessage$Type.<% object.rpcGetCreateCase() %>,
+      value: new RPC.<% object.rpcGetCreateMsg() %>({
+        _replyId,
+        _timestamp,
+        ...data,
+      })
+    }));
     const obj = new <% object.pascalCase %>(data);
     obj.init(session);
-    return obj;
+    return { obj, promise };
+  }
+
+  delete(session: RPC.VossSession): Promise<void> {
+    const { uuid } = this.data;
+    session.objects.delete(uuid);
+    <% object.pascalCase %>.getViewForSession(session).remove(this);
+  <% for field in object.getFields() |> field.isViewed %>
+    <% object.pascalCase %>.get<% field.pascalCase %>ViewFor(session, this.data.<% field.camelCase %>).remove(this);
+  <% /for %>
+    return session.sendRequest((replyId: number, timestamp: number) => ({
+      type: RPC.RPCMessage$Type.Delete,
+      value: new RPC.DeleteMessage({ replyId, timestamp, uuid })
+    }));
   }
 
   <% for field in object.getFields() |> field.isViewed %>
@@ -54,6 +75,7 @@ export class <% object.pascalCase %> extends voss.ObjectBase<<% object.pascalCas
   <% /for %>
 
   init(session: RPC.VossSession) {
+    session.objects.set(this.getUuid(), this as any);
     <% object.pascalCase %>.getViewForSession(session).add(this);
   <% for field in object.getFields() |> field.isViewed %>
     <% object.pascalCase %>.get<% field.pascalCase %>ViewFor(session, this.data.<% field.camelCase %>).add(this);
@@ -64,7 +86,7 @@ export class <% object.pascalCase %> extends voss.ObjectBase<<% object.pascalCas
     switch (key) {
       <% for field in object.getFields() |> field.isViewed %>
       case "<% field.camelCase %>":
-        <% object.pascalCase %>.get<% field.pascalCase %>ViewFor(session, prev).remove(this);
+        <% object.pascalCase %>.get<% field.pascalCase %>ViewFor(session, prev as any).remove(this);
         <% object.pascalCase %>.get<% field.pascalCase %>ViewFor(session, this.data.<% field.camelCase %>).add(this);
         break;
       <% /for %>
